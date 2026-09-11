@@ -37,6 +37,10 @@ export async function updateSession(request: NextRequest) {
     pathname.startsWith("/login") || pathname.startsWith("/auth");
 
   if (!user && !isPublic) {
+    // Las rutas de API responden 401 en JSON, no con una redirección HTML.
+    if (pathname.startsWith("/api")) {
+      return NextResponse.json({ error: "No has iniciado sesión" }, { status: 401 });
+    }
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     return NextResponse.redirect(url);
