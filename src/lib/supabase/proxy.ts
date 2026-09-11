@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { requestOrigin } from "@/lib/request-origin";
 
 // Refresca el token de sesión en cada request y redirige a /login
 // si no hay usuario. Se llama desde src/proxy.ts.
@@ -41,9 +42,7 @@ export async function updateSession(request: NextRequest) {
     if (pathname.startsWith("/api")) {
       return NextResponse.json({ error: "No has iniciado sesión" }, { status: 401 });
     }
-    const url = request.nextUrl.clone();
-    url.pathname = "/login";
-    return NextResponse.redirect(url);
+    return NextResponse.redirect(`${requestOrigin(request.headers)}/login`);
   }
 
   return supabaseResponse;
