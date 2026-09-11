@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { getSessionUser } from "@/lib/auth";
 import { getVideo, formatDate } from "@/lib/videos";
+import { Player } from "./player";
 
 export const dynamic = "force-dynamic";
 
@@ -22,23 +23,17 @@ export default async function VideoPage({ params }: { params: Promise<{ id: stri
     <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-4 p-4 sm:p-6">
       <Link href="/" className="text-sm underline">← Todos los vídeos</Link>
 
-      <div className={vertical ? "mx-auto w-full max-w-sm" : "w-full"}>
-        <video
-          controls
-          playsInline
-          preload="metadata"
-          src={v.videoUrl}
-          className="w-full rounded-lg bg-black"
-          style={{ aspectRatio: ratio }}
-        />
-      </div>
+      <Player src={v.videoUrl} ratio={ratio} vertical={vertical} />
 
       <h1 className="text-xl font-semibold">{v.title}</h1>
       <p className="text-sm capitalize text-zinc-600">{formatDate(v.class_date)}</p>
       {v.notes && (
-        <p className="whitespace-pre-line rounded-lg bg-amber-50 p-3 text-sm text-amber-950 dark:bg-amber-950 dark:text-amber-50">
-          {v.notes}
-        </p>
+        <div className="rounded-lg border-l-4 border-amber-400 bg-amber-50 p-3 dark:bg-amber-950">
+          <p className="mb-1 text-xs font-medium uppercase tracking-wide text-amber-800 dark:text-amber-300">
+            Nota del profe
+          </p>
+          <p className="whitespace-pre-line text-sm text-amber-950 dark:text-amber-50">{v.notes}</p>
+        </div>
       )}
     </main>
   );
