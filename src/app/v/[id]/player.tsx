@@ -262,9 +262,7 @@ export function Player({
               <Tooltip key={c.id}>
                 <TooltipTrigger
                   render={
-                    <button
-                      type="button"
-                      className="timeline-pin"
+                    <button type="button" className="timeline-pin"
                       style={{ left: `${pct(c.t_seconds)}%` }}
                       aria-label={`Nota en ${formatStamp(c.t_seconds)}`}
                       aria-pressed={selected === c.id}
@@ -324,14 +322,27 @@ export function Player({
               <Repeat className="size-4" />
               Modo repetir
             </CardTitle>
-            <CardDescription>
-              <ol className="list-decimal space-y-0.5 pl-5">
-                <li className={step === "setA" ? "font-medium text-foreground" : ""}>Toca en la barra del vídeo donde empieza el trozo.</li>
-                <li className={step === "setB" ? "font-medium text-foreground" : ""}>Toca donde termina. Empieza a repetirse solo.</li>
-                <li className={step === "ready" ? "font-medium text-foreground" : ""}>Si hace falta, arrastra los extremos verdes o afina con los botones.</li>
-              </ol>
-            </CardDescription>
           </CardHeader>
+          <CardContent>
+            <ItemGroup>
+              {(
+                [
+                  ["setA", "Toca en la barra del vídeo donde empieza el trozo."],
+                  ["setB", "Toca donde termina. Empieza a repetirse solo."],
+                  ["ready", "Si hace falta, arrastra los extremos verdes o afina con los botones."],
+                ] as const
+              ).map(([key, text], i) => (
+                <Item key={key} size="xs" variant={step === key ? "muted" : "default"} aria-current={step === key ? "step" : undefined}>
+                  <ItemMedia>
+                    <Badge variant={step === key ? "default" : "outline"}>{i + 1}</Badge>
+                  </ItemMedia>
+                  <ItemContent>
+                    <ItemDescription className={step === key ? "text-foreground" : ""}>{text}</ItemDescription>
+                  </ItemContent>
+                </Item>
+              ))}
+            </ItemGroup>
+          </CardContent>
           <CardContent className="flex flex-wrap items-center gap-2">
             {step === "ready" && (
               <>
