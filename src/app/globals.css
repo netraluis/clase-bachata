@@ -265,6 +265,19 @@
   .meta .speed { color: rgb(243 238 231 / 0.5); }
   .stage-shade { position: absolute; left: 0; right: 0; bottom: 0; height: 90px; background: linear-gradient(transparent, rgb(12 9 16 / 0.75)); pointer-events: none; }
 
+  /* Globo sobre una marca de la barra (SoundCloud/Frame.io): quién y qué. */
+  .bubble {
+    position: absolute; bottom: 22px; transform: translateX(-50%);
+    width: max-content; max-width: min(280px, 80vw);
+    background: var(--color-ink-2); border: 1px solid var(--color-line); border-radius: 10px;
+    padding: 8px 10px; pointer-events: none; z-index: 2;
+    box-shadow: 0 6px 20px rgb(12 9 16 / 0.5);
+  }
+  .bubble::after {
+    content: ""; position: absolute; left: 50%; bottom: -6px; transform: translateX(-50%) rotate(45deg);
+    width: 10px; height: 10px; background: var(--color-ink-2); border-right: 1px solid var(--color-line); border-bottom: 1px solid var(--color-line);
+  }
+
   /* Lista de notas ancladas. */
   .note { display: flex; gap: 10px; padding: 12px 0; border-top: 1px solid var(--color-ink-3); transition: opacity 0.2s; cursor: pointer; text-align: left; width: 100%; background: none; border-left: 0; border-right: 0; border-bottom: 0; color: inherit; }
   .note:first-child { border-top: 0; }

@@ -34,7 +34,7 @@ export default async function VideoPage({ params }: { params: Promise<{ id: stri
         duration={v.duration_s ?? 0}
         comments={v.comments}
         profeNote={v.notes}
-        viewer={user ? { id: user.id, role: user.role, isAdmin: user.isAdmin } : null}
+        viewer={user ? { id: user.id, role: user.role, isAdmin: user.isAdmin, canWrite: user.canUpload } : null}
       />
     </main>
   );

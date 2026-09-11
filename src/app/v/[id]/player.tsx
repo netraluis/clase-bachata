@@ -8,8 +8,7 @@ import type { Role } from "@/lib/auth";
 import { addComment, deleteComment } from "./actions";
 
 const SPEEDS = [0.5, 0.75, 1] as const;
-type Viewer = { id: string; role: Role; isAdmin: boolean } | null;
-
+type Viewer = { id: string; role: Role; isAdmin: boolean; canWrite: boolean } | null;
 const ROLE_LABEL: Record<Role, string> = { admin: "admin", profe: "profe", alumno: "alumno" };
 
 export function Player({
@@ -32,6 +31,7 @@ export function Player({
   viewer: Viewer;
 }) {
   const ref = useRef<HTMLVideoElement>(null);
+  const textRef = useRef<HTMLTextAreaElement>(null);
   const [playing, setPlaying] = useState(false);
   const [now, setNow] = useState(0);
   const [duration, setDuration] = useState(durationProp);
@@ -39,7 +39,7 @@ export function Player({
   const [a, setA] = useState<number | null>(null);
   const [b, setB] = useState<number | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
-  const [onlyProfes, setOnlyProfes] = useState(false);
+  const [hovered, setHovered] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
   const [draftAt, setDraftAt] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -70,6 +70,9 @@ export function Player({
     video.currentTime = Math.max(0, Math.min(t, duration || t));
     setNow(video.currentTime);
   }
+  function pause() {
+    ref.current?.pause();
+  }
   function togglePlay() {
     const video = ref.current;
     if (!video) return;
@@ -78,10 +81,11 @@ export function Player({
   }
   function onBarClick(e: React.MouseEvent<HTMLDivElement>) {
     const rect = e.currentTarget.getBoundingClientRect();
-    const f = (e.clientX - rect.left) / rect.width;
-    seek(f * duration);
+    seek(((e.clientX - rect.left) / rect.width) * duration);
   }
+  // Tocar una marca o una nota: pausa y salta a ese momento (Frame.io).
   function pick(c: Comment) {
+    pause();
     setSelected(c.id === selected ? null : c.id);
     seek(c.t_seconds);
   }
@@ -93,6 +97,18 @@ export function Player({
     if (a == null) setA(0);
     setB(now);
     if (a != null && now > a) seek(a);
+  }
+
+  // Escribir una nota: el vídeo se pausa y el momento queda fijado en el
+  // fotograma que se ve. Es lo que hacen Frame.io y Vimeo Review.
+  function anchorHere() {
+    pause();
+    setDraftAt(ref.current?.currentTime ?? now);
+    textRef.current?.focus();
+  }
+  function onDraftFocus() {
+    if (draftAt == null) anchorHere();
+    else pause();
   }
   function submitNote(e: React.FormEvent) {
     e.preventDefault();
@@ -108,6 +124,10 @@ export function Player({
       }
     });
   }
+  function cancelDraft() {
+    setDraft("");
+    setDraftAt(null);
+  }
   function remove(c: Comment) {
     start(async () => {
       const res = await deleteComment(videoId, c.id);
@@ -115,9 +135,11 @@ export function Player({
     });
   }
 
-  const visible = onlyProfes ? comments.filter((c) => c.author_role !== "alumno") : comments;
   const played = duration ? Math.min(100, (now / duration) * 100) : 0;
   const status = [speed !== 1 ? `${speed}×` : null, loopOn ? "en bucle" : null].filter(Boolean).join(", ");
+  const bubbleFor = hovered ?? selected;
+  const bubble = bubbleFor ? comments.find((c) => c.id === bubbleFor) ?? null : null;
+  const pct = (t: number) => Math.min(100, (t / duration) * 100);
 
   return (
     <div className="flex flex-col gap-4">
@@ -141,23 +163,44 @@ export function Player({
         {!playing && <div className="glyph" aria-hidden="true" />}
         <div className="stage-shade" />
 
-        <div className="bar" onClick={onBarClick} role="slider" aria-label="Posición" aria-valuemin={0} aria-valuemax={duration} aria-valuenow={now}>
+        <div
+          className="bar"
+          onClick={onBarClick}
+          role="slider"
+          aria-label="Posición"
+          aria-valuemin={0}
+          aria-valuemax={duration}
+          aria-valuenow={now}
+        >
           <div className="played" style={{ width: `${played}%` }} />
           {duration > 0 &&
             comments.map((c) => (
               <button
                 key={c.id}
                 type="button"
-                className={`pin ${c.author_role === "alumno" ? "pin-alum" : "pin-prof"}`}
-                style={{ left: `${Math.min(100, (c.t_seconds / duration) * 100)}%` }}
-                aria-label={`Nota en ${formatStamp(c.t_seconds)}`}
+                className="pin pin-prof"
+                style={{ left: `${pct(c.t_seconds)}%` }}
+                aria-label={`Nota en ${formatStamp(c.t_seconds)}: ${c.body}`}
                 aria-pressed={selected === c.id}
+                onMouseEnter={() => setHovered(c.id)}
+                onMouseLeave={() => setHovered(null)}
+                onFocus={() => setHovered(c.id)}
+                onBlur={() => setHovered(null)}
                 onClick={(e) => {
                   e.stopPropagation();
                   pick(c);
                 }}
               />
             ))}
+          {bubble && duration > 0 && (
+            <div className="bubble" style={{ left: `clamp(120px, ${pct(bubble.t_seconds)}%, calc(100% - 120px))` }}>
+              <p className="who">
+                <span className="stamp stamp-prof mr-1">{formatStamp(bubble.t_seconds)}</span>
+                {bubble.author_name}
+              </p>
+              <p className="said line-clamp-4">{bubble.body}</p>
+            </div>
+          )}
         </div>
         <div className="meta">
           <span>{formatStamp(now)}</span>
@@ -171,6 +214,11 @@ export function Player({
         <button type="button" onClick={togglePlay} className="btn !min-h-9">
           {playing ? "Pausa" : "Reproducir"}
         </button>
+        {viewer?.canWrite && (
+          <button type="button" onClick={anchorHere} className="btn btn-primary !min-h-9">
+            Nota en {formatStamp(now)}
+          </button>
+        )}
         <span className="ml-2 text-small text-paper-dim">Velocidad</span>
         {SPEEDS.map((s) => (
           <button key={s} type="button" onClick={() => setSpeed(s)} aria-pressed={speed === s} className="chip">
@@ -195,30 +243,28 @@ export function Player({
 
       {/* Notas */}
       <div className="card">
-        <div className="flex flex-wrap items-center gap-1.5 px-4 pt-3 pb-1">
-          <button type="button" className="chip" aria-pressed={!onlyProfes} onClick={() => setOnlyProfes(false)}>
-            Todas las notas
-          </button>
-          <button type="button" className="chip" aria-pressed={onlyProfes} onClick={() => setOnlyProfes(true)}>
-            Solo profes
-          </button>
+        <div className="flex items-center justify-between px-4 pt-4 pb-1">
+          <h2 className="text-lede">Notas del profe</h2>
+          <span className="text-mini text-paper-dim">{comments.length === 1 ? "1 nota" : `${comments.length} notas`}</span>
         </div>
 
         <div className="px-4">
           {profeNote && (
             <div className="note cursor-default">
-              <span className="stamp stamp-prof">nota</span>
+              <span className="stamp stamp-prof">general</span>
               <div>
-                <p className="who">Nota general del profe</p>
                 <p className="said">{profeNote}</p>
               </div>
             </div>
           )}
-          {visible.length === 0 && !profeNote && (
-            <p className="py-3 text-small text-paper-dim">Todavía no hay notas. Pausa donde quieras y escribe una.</p>
+          {comments.length === 0 && !profeNote && (
+            <p className="py-3 text-small text-paper-dim">
+              {viewer?.canWrite
+                ? "Todavía no hay notas. Pausa el vídeo donde quieras y escribe abajo."
+                : "Todavía no hay notas del profe en este vídeo."}
+            </p>
           )}
-          {visible.map((c) => {
-            const alum = c.author_role === "alumno";
+          {comments.map((c) => {
             const canDelete = viewer && (viewer.id === c.author_id || viewer.isAdmin);
             return (
               <button
@@ -227,7 +273,7 @@ export function Player({
                 className={`note ${selected && selected !== c.id ? "dim" : ""}`}
                 onClick={() => pick(c)}
               >
-                <span className={`stamp ${alum ? "stamp-alum" : "stamp-prof"}`}>{formatStamp(c.t_seconds)}</span>
+                <span className="stamp stamp-prof">{formatStamp(c.t_seconds)}</span>
                 <div className="min-w-0 flex-1">
                   <p className="who">
                     {c.author_name}, {ROLE_LABEL[c.author_role]}
@@ -252,35 +298,50 @@ export function Player({
           })}
         </div>
 
-        {/* Composer */}
-        {viewer ? (
-          <form onSubmit={submitNote} className="flex items-center gap-2 border-t border-ink-3 px-4 py-3">
-            <button
-              type="button"
-              className="stamp bg-ink-3 text-paper-dim"
-              onClick={() => setDraftAt(now)}
-              title="Fijar la nota en el momento actual"
-            >
-              en {formatStamp(draftAt ?? now)}
-            </button>
-            <input
-              value={draft}
-              onChange={(e) => {
-                if (draftAt == null) setDraftAt(now);
-                setDraft(e.target.value);
-              }}
-              placeholder="Escribe una nota"
-              className="field !min-h-10 flex-1"
-              disabled={pending}
-            />
-            <button type="submit" className="btn btn-primary !min-h-10" disabled={pending || !draft.trim()}>
-              Añadir
-            </button>
+        {/* Compositor: solo profes y admin */}
+        {viewer?.canWrite ? (
+          <form onSubmit={submitNote} className="flex flex-col gap-2 border-t border-ink-3 px-4 py-3">
+            <div className="flex flex-wrap items-center gap-2 text-mini text-paper-dim">
+              {draftAt != null ? (
+                <>
+                  <button type="button" className="stamp stamp-prof" onClick={anchorHere} title="Mover la nota al momento actual">
+                    en {formatStamp(draftAt)}
+                  </button>
+                  <span>La nota queda en el fotograma que ves. Mueve el vídeo y pulsa el tiempo para cambiarla.</span>
+                </>
+              ) : (
+                <span>Al escribir, el vídeo se pausa y la nota queda en ese momento.</span>
+              )}
+            </div>
+            <div className="flex items-end gap-2">
+              <textarea
+                ref={textRef}
+                value={draft}
+                onFocus={onDraftFocus}
+                onChange={(e) => setDraft(e.target.value)}
+                placeholder="Escribe una nota"
+                rows={2}
+                className="field flex-1"
+                disabled={pending}
+              />
+              <div className="flex flex-col gap-1">
+                <button type="submit" className="btn btn-primary !min-h-10" disabled={pending || !draft.trim()}>
+                  Guardar
+                </button>
+                {(draft || draftAt != null) && (
+                  <button type="button" onClick={cancelDraft} className="btn !min-h-8 text-mini">
+                    Cancelar
+                  </button>
+                )}
+              </div>
+            </div>
           </form>
         ) : (
-          <p className="border-t border-ink-3 px-4 py-3 text-small text-paper-dim">
-            <Link href="/login">Entra</Link> para dejar una nota en un momento del vídeo.
-          </p>
+          !viewer && (
+            <p className="border-t border-ink-3 px-4 py-3 text-mini text-paper-dim">
+              Las notas las escribe el profe. Si lo eres, <Link href="/login">entra</Link>.
+            </p>
+          )
         )}
         {error && <p className="notice notice-rosa mx-4 mb-3">{error}</p>}
       </div>

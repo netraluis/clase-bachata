@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/server";
 export async function addComment(videoId: string, t: number, body: string): Promise<{ error?: string }> {
   const user = await getSessionUser();
   if (!user) return { error: "Entra para dejar una nota" };
+  if (!user.canUpload) return { error: "Solo los profes pueden dejar notas" };
   const text = body.trim().slice(0, 2000);
   if (!text) return { error: "La nota está vacía" };
   if (!Number.isFinite(t) || t < 0) return { error: "Tiempo inválido" };

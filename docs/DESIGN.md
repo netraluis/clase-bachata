@@ -78,6 +78,7 @@ Clases CSS en `src/app/globals.css`, capa `components`. Se combinan con utilidad
 | `.mark` | Marca "Compás" | `Comp<em>á</em>s`, la tilde en brass |
 | `.stage` | Escenario del reproductor | Fondo stage, radio card. Dentro: `.glyph` (play centrado), `.bar` con `.played` y `.pin`, `.meta` (tiempo, estado, duración), `.stage-shade` |
 | `.pin` | Marca de nota en la barra | `.pin-prof` brass, `.pin-alum` rosa. `aria-pressed="true"` la agranda. Área de toque de 37 px aunque mida 13 |
+| `.bubble` | Globo sobre una marca al pasar el ratón o tocarla | Tiempo en `.stamp`, autor y texto. Se ancla al `left` de la marca, acotado para no salirse del escenario |
 | `.note` | Nota anclada en la lista | `.stamp` con el tiempo, `.who` (quién y rol), `.said` (texto). `.dim` atenúa las no seleccionadas |
 
 ## Jerarquía y pantallas
@@ -86,7 +87,8 @@ Escuela → Curso (Salsa intermedio) → Sesión (14 nov) → Vídeo → Nota (t
 
 - **Cursos** (`/`): una `.card` por curso con nombre en `text-lede`, horario y recuento de sesiones y vídeos.
 - **Curso** (`/c/[id]`): sesiones agrupadas por fecha en `text-lede`, porque la alumna busca un día, no un archivo. Vídeos como filas `.row` dentro de una `.card`, con `.badge` "N notas".
-- **Vídeo** (`/v/[id]`): `.stage` con la barra de posición y un `.pin` por nota. Debajo, chips de velocidad y bucle. Luego una `.card` con los filtros ("Todas las notas" / "Solo profes"), la lista de `.note` y el compositor: `.stamp` con "en 1:15", un `.field` y un `.btn-primary`. Tocar una nota o su pin salta a ese segundo y atenúa el resto. Sin sesión, el compositor es un enlace a entrar.
+- **Vídeo** (`/v/[id]`): `.stage` con la barra de posición y un `.pin` por nota. Pasar el ratón por una marca, o tocarla, muestra un `.bubble` con la nota; tocarla además pausa y salta a ese segundo (patrón de SoundCloud y Frame.io). Debajo, chips de velocidad y bucle. Luego una `.card` "Notas del profe" con la lista de `.note` y, solo para profes y admin, el compositor.
+  - **Anclar una nota** sigue el patrón de Frame.io y Vimeo Review: al enfocar el campo de texto el vídeo se pausa y la nota queda en el fotograma que se ve, con el tiempo como `.stamp` dorado ("en 0:42"). El botón "Nota en 0:42" del reproductor hace lo mismo y lleva el foco al campo. Mover el vídeo y pulsar el stamp cambia el momento. No hay que escribir ni elegir tiempos a mano.
 - **Subir** (`/subir`): "Subir a <curso>", con el curso detectado por el día de la semana y la fecha de la última clase ya puesta. Campos `.field`, progreso `.prog`, errores `.notice-rosa`, avisos `.notice-brass`, un solo `.btn-primary`. La sesión se crea sola.
 - **Administración** (`/admin`): nombre de la escuela editable, tres cifras en `text-display` (almacenamiento, alumnos, clases sin vídeo esta semana, esta última en brass si hay alguna), cursos con alta de nuevos, y personas con `.av`, `.tag` y rol editable.
 - **Entrar** (`/login`): una `.card` centrada con un `.btn-primary`.
