@@ -78,6 +78,7 @@ Clases CSS en `src/app/globals.css`, capa `components`. Se combinan con utilidad
 | `.mark` | Marca "Compás" | `Comp<em>á</em>s`, la tilde en brass |
 | `.stage` | Escenario del reproductor | Fondo stage, radio card. Dentro: `.glyph` (play centrado), `.bar` con `.played` y `.pin`, `.meta` (tiempo, estado, duración), `.stage-shade` |
 | `.pin` | Marca de nota en la barra | `.pin-prof` brass, `.pin-alum` rosa. `aria-pressed="true"` la agranda. Área de toque de 37 px aunque mida 13 |
+| `.range` + `.handle` | Tramo en bucle sobre la barra | Banda dorada translúcida entre los dos extremos; los extremos son pastillas brass arrastrables con área de toque de 44 px |
 | `.bubble` | Globo sobre una marca al pasar el ratón o tocarla | Tiempo en `.stamp`, autor y texto. Se ancla al `left` de la marca, acotado para no salirse del escenario |
 | `.note` | Nota anclada en la lista | `.stamp` con el tiempo, `.who` (quién y rol), `.said` (texto). `.dim` atenúa las no seleccionadas |
 
@@ -87,7 +88,8 @@ Escuela → Curso (Salsa intermedio) → Sesión (14 nov) → Vídeo → Nota (t
 
 - **Cursos** (`/`): una `.card` por curso con nombre en `text-lede`, horario y recuento de sesiones y vídeos.
 - **Curso** (`/c/[id]`): sesiones agrupadas por fecha en `text-lede`, porque la alumna busca un día, no un archivo. Vídeos como filas `.row` dentro de una `.card`, con `.badge` "N notas".
-- **Vídeo** (`/v/[id]`): `.stage` con la barra de posición y un `.pin` por nota. Pasar el ratón por una marca, o tocarla, muestra un `.bubble` con la nota; tocarla además pausa y salta a ese segundo (patrón de SoundCloud y Frame.io). Debajo, chips de velocidad y bucle. Luego una `.card` "Notas del profe" con la lista de `.note` y, solo para profes y admin, el compositor.
+- **Vídeo** (`/v/[id]`): `.stage` con la barra de posición y un `.pin` por nota. Pasar el ratón por una marca, o tocarla, muestra un `.bubble` con la nota; tocarla además pausa y salta a ese segundo (patrón de SoundCloud y Frame.io). Debajo, chips de velocidad y el bucle. Luego una `.card` "Notas del profe" con la lista de `.note` y, solo para profes y admin, el compositor.
+  - **Repetir un trozo** (bucle) sigue el patrón de las apps de práctica musical (Anytune, Moises): un solo botón "Repetir un trozo" que toma 6 s desde donde está el vídeo y pinta un `.range` dorado en la barra con dos `.handle` arrastrables. El estado se lee en la barra ("repitiendo 0:20–0:26") y en el chip, que también sirve para parar. Ajuste fino con ±1 s en cada extremo. Nunca se pide al usuario "marcar" nada.
   - **Anclar una nota** sigue el patrón de Frame.io y Vimeo Review: al enfocar el campo de texto el vídeo se pausa, y el tiempo de la nota es siempre el del cabezal, en grande (`text-display`, brass) a la izquierda del campo. Si mueves el vídeo mientras escribes, la nota se mueve con él; el botón dice "Guardar en 0:23". No hay chips ni tiempos que elegir a mano.
 - **Subir** (`/subir`): "Subir a <curso>", con el curso detectado por el día de la semana y la fecha de la última clase ya puesta. Campos `.field`, progreso `.prog`, errores `.notice-rosa`, avisos `.notice-brass`, un solo `.btn-primary`. La sesión se crea sola.
 - **Administración** (`/admin`): nombre de la escuela editable, tres cifras en `text-display` (almacenamiento, alumnos, clases sin vídeo esta semana, esta última en brass si hay alguna), cursos con alta de nuevos, y personas con `.av`, `.tag` y rol editable.

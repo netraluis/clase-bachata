@@ -38,6 +38,8 @@ export function Player({
   const [speed, setSpeed] = useState<number>(1);
   const [a, setA] = useState<number | null>(null);
   const [b, setB] = useState<number | null>(null);
+  const barRef = useRef<HTMLDivElement>(null);
+  const dragging = useRef<"a" | "b" | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
   const [hovered, setHovered] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
@@ -88,14 +90,56 @@ export function Player({
     setSelected(c.id === selected ? null : c.id);
     seek(c.t_seconds);
   }
-  function markA() {
-    setA(now);
-    if (b != null && b <= now) setB(null);
+  // Repetir un trozo: al activarlo, un tramo de 6 s desde el punto actual.
+  // Los extremos se arrastran en la barra o se ajustan con ±1 s.
+  const MIN_GAP = 0.5;
+  function startLoop() {
+    const from = Math.max(0, Math.min(now, Math.max(0, duration - MIN_GAP)));
+    const to = Math.min(duration || from + 6, from + 6);
+    setA(from);
+    setB(to);
+    seek(from);
+    void ref.current?.play();
   }
-  function markB() {
-    if (a == null) setA(0);
-    setB(now);
-    if (a != null && now > a) seek(a);
+  function stopLoop() {
+    setA(null);
+    setB(null);
+  }
+  function nudge(which: "a" | "b", delta: number) {
+    if (a == null || b == null) return;
+    if (which === "a") setA(Math.max(0, Math.min(a + delta, b - MIN_GAP)));
+    else setB(Math.max(a + MIN_GAP, Math.min(b + delta, duration)));
+  }
+  function fracFromEvent(e: React.PointerEvent | PointerEvent): number {
+    const rect = barRef.current?.getBoundingClientRect();
+    if (!rect) return 0;
+    return Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+  }
+  function onHandleDown(which: "a" | "b", e: React.PointerEvent<HTMLButtonElement>) {
+    e.stopPropagation();
+    e.currentTarget.setPointerCapture(e.pointerId);
+    dragging.current = which;
+    pause();
+  }
+  function onHandleMove(e: React.PointerEvent<HTMLButtonElement>) {
+    if (!dragging.current || a == null || b == null) return;
+    const t = fracFromEvent(e) * duration;
+    if (dragging.current === "a") {
+      const v = Math.min(t, b - MIN_GAP);
+      setA(v);
+      seek(v);
+    } else {
+      const v = Math.max(t, a + MIN_GAP);
+      setB(v);
+      seek(Math.max(a, v - 1));
+    }
+  }
+  function onHandleUp(e: React.PointerEvent<HTMLButtonElement>) {
+    if (!dragging.current) return;
+    e.currentTarget.releasePointerCapture(e.pointerId);
+    dragging.current = null;
+    if (a != null) seek(a);
+    void ref.current?.play();
   }
 
   // Escribir una nota: el vídeo se pausa al enfocar el campo, y el tiempo de
@@ -125,7 +169,12 @@ export function Player({
   }
 
   const played = duration ? Math.min(100, (now / duration) * 100) : 0;
-  const status = [speed !== 1 ? `${speed}×` : null, loopOn ? "en bucle" : null].filter(Boolean).join(", ");
+  const status = [
+    speed !== 1 ? `${speed}×` : null,
+    loopOn ? `repitiendo ${formatStamp(a)}–${formatStamp(b)}` : null,
+  ]
+    .filter(Boolean)
+    .join(", ");
   const bubbleFor = hovered ?? selected;
   const bubble = bubbleFor ? comments.find((c) => c.id === bubbleFor) ?? null : null;
   const pct = (t: number) => Math.min(100, (t / duration) * 100);
@@ -153,6 +202,7 @@ export function Player({
         <div className="stage-shade" />
 
         <div
+          ref={barRef}
           className="bar"
           onClick={onBarClick}
           role="slider"
@@ -162,6 +212,31 @@ export function Player({
           aria-valuenow={now}
         >
           <div className="played" style={{ width: `${played}%` }} />
+          {loopOn && duration > 0 && (
+            <>
+              <div className="range" style={{ left: `${pct(a)}%`, width: `${pct(b) - pct(a)}%` }} />
+              <button
+                type="button"
+                className="handle"
+                style={{ left: `${pct(a)}%` }}
+                aria-label={`Inicio del trozo, ${formatStamp(a)}`}
+                onPointerDown={(e) => onHandleDown("a", e)}
+                onPointerMove={onHandleMove}
+                onPointerUp={onHandleUp}
+                onClick={(e) => e.stopPropagation()}
+              />
+              <button
+                type="button"
+                className="handle"
+                style={{ left: `${pct(b)}%` }}
+                aria-label={`Fin del trozo, ${formatStamp(b)}`}
+                onPointerDown={(e) => onHandleDown("b", e)}
+                onPointerMove={onHandleMove}
+                onPointerUp={onHandleUp}
+                onClick={(e) => e.stopPropagation()}
+              />
+            </>
+          )}
           {duration > 0 &&
             comments.map((c) => (
               <button
@@ -210,18 +285,35 @@ export function Player({
           </button>
         ))}
       </div>
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="mr-1 text-small text-paper-dim">Bucle</span>
-        <button type="button" onClick={markA} aria-pressed={a != null} className="chip">
-          {a != null ? `Inicio ${formatStamp(a)}` : "Marcar inicio"}
-        </button>
-        <button type="button" onClick={markB} aria-pressed={b != null} className="chip">
-          {b != null ? `Fin ${formatStamp(b)}` : "Marcar fin"}
-        </button>
-        {(a != null || b != null) && (
-          <button type="button" onClick={() => { setA(null); setB(null); }} className="chip">
-            Quitar
-          </button>
+      <div className="flex flex-col gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          {!loopOn ? (
+            <>
+              <button type="button" onClick={startLoop} className="chip" disabled={!duration}>
+                Repetir un trozo
+              </button>
+              <span className="text-mini text-paper-dim">
+                Repite un paso una y otra vez, desde donde esté el vídeo.
+              </span>
+            </>
+          ) : (
+            <>
+              <button type="button" onClick={stopLoop} className="chip" aria-pressed="true">
+                Repitiendo {formatStamp(a)}–{formatStamp(b)} · parar
+              </button>
+              <span className="text-mini text-paper-dim">Arrastra los extremos dorados de la barra para ajustar el trozo.</span>
+            </>
+          )}
+        </div>
+        {loopOn && (
+          <div className="flex flex-wrap items-center gap-2 text-small">
+            <span className="text-paper-dim">Inicio</span>
+            <button type="button" onClick={() => nudge("a", -1)} className="chip">−1 s</button>
+            <button type="button" onClick={() => nudge("a", 1)} className="chip">+1 s</button>
+            <span className="ml-2 text-paper-dim">Fin</span>
+            <button type="button" onClick={() => nudge("b", -1)} className="chip">−1 s</button>
+            <button type="button" onClick={() => nudge("b", 1)} className="chip">+1 s</button>
+          </div>
         )}
       </div>
 

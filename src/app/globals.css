@@ -265,6 +265,15 @@
   .meta .speed { color: rgb(243 238 231 / 0.5); }
   .stage-shade { position: absolute; left: 0; right: 0; bottom: 0; height: 90px; background: linear-gradient(transparent, rgb(12 9 16 / 0.75)); pointer-events: none; }
 
+  /* Tramo en bucle sobre la barra: banda dorada con dos extremos arrastrables. */
+  .range { position: absolute; top: -3px; height: 9px; background: rgb(230 180 76 / 0.28); border-radius: 4px; pointer-events: none; }
+  .handle {
+    position: absolute; top: -8px; width: 8px; height: 19px; border-radius: 4px; border: 0; padding: 0;
+    background: var(--color-brass); transform: translateX(-50%); cursor: ew-resize; touch-action: none;
+  }
+  .handle::before { content: ""; position: absolute; inset: -14px -18px; } /* área de toque 44px */
+  .handle:active { transform: translateX(-50%) scaleY(1.2); }
+
   /* Globo sobre una marca de la barra (SoundCloud/Frame.io): quién y qué. */
   .bubble {
     position: absolute; bottom: 22px; transform: translateX(-50%);
