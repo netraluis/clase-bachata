@@ -274,9 +274,7 @@ export function Player({
                   }
                 />
                 <TooltipContent side="top" className="max-w-xs">
-                  <p className="text-xs opacity-80">
-                    {formatStamp(c.t_seconds)} · {c.author_name}
-                  </p>
+                  <p className="text-xs opacity-80">{formatStamp(c.t_seconds)}</p>
                   <p>{c.body}</p>
                 </TooltipContent>
               </Tooltip>
@@ -408,9 +406,6 @@ export function Player({
                         </Button>
                       </ItemMedia>
                       <ItemContent>
-                        <ItemDescription>
-                          {c.author_name}, {c.author_role}
-                        </ItemDescription>
                         <ItemTitle className="whitespace-pre-line font-normal">{c.body}</ItemTitle>
                       </ItemContent>
                       {canDelete && (
