@@ -13,17 +13,15 @@ export default async function LoginPage({
   const { error } = await searchParams;
 
   return (
-    <main className="flex flex-1 flex-col items-center justify-center gap-6 p-6 text-center">
-      <h1 className="text-3xl font-semibold">Clase de bachata</h1>
-      <p className="text-zinc-600">
-        Para ver los vídeos no hace falta entrar. Esto es para los profes, que suben los vídeos.
-      </p>
-      <LoginButton />
-      {error && (
-        <p className="text-sm text-red-600">
-          No se pudo iniciar sesión. Vuelve a intentarlo.
+    <main className="flex flex-1 flex-col items-center justify-center px-4 py-10">
+      <div className="card flex w-full max-w-sm flex-col gap-5 p-6 text-center">
+        <h1 className="text-display">Entrar</h1>
+        <p className="text-small text-paper-dim">
+          Para ver los vídeos no hace falta entrar. Esto es para los profes, que suben los vídeos.
         </p>
-      )}
+        <LoginButton />
+        {error && <p className="notice notice-rosa">No se pudo iniciar sesión. Vuelve a intentarlo.</p>}
+      </div>
     </main>
   );
 }

@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { getSessionUser } from "@/lib/auth";
 import { listVideos, formatDate, formatDuration } from "@/lib/videos";
 
 export const dynamic = "force-dynamic";
@@ -9,84 +8,48 @@ export default async function Home({
 }: {
   searchParams: Promise<{ error?: string }>;
 }) {
-  const user = await getSessionUser();
   const { error } = await searchParams;
   const videos = await listVideos();
 
-  // Agrupar por fecha de clase (ya vienen ordenados desc)
+  // Agrupar por fecha de clase: la alumna busca un día, no un archivo.
   const byDate = new Map<string, typeof videos>();
   for (const v of videos) byDate.set(v.class_date, [...(byDate.get(v.class_date) ?? []), v]);
 
   return (
-    <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 p-4 sm:p-6">
-      <header className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-semibold">Clase de bachata</h1>
-        <div className="flex items-center gap-3 text-sm">
-          {!user && (
-            <Link href="/login" className="underline">
-              Entrar
-            </Link>
-          )}
-          {user && (
-            <span className="text-zinc-600">
-              {user.name ?? user.email} <strong>· {user.role}</strong>
-            </span>
-          )}
-          {user?.isAdmin && (
-            <Link href="/admin" className="underline">
-              Personas
-            </Link>
-          )}
-          {user?.canUpload && (
-            <Link href="/subir" className="rounded-lg bg-black px-3 py-2 text-white dark:bg-white dark:text-black">
-              Subir vídeo
-            </Link>
-          )}
-          {user && (
-            <form action="/auth/signout" method="post">
-              <button className="underline">Salir</button>
-            </form>
-          )}
-        </div>
-      </header>
-
+    <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-8 px-4 py-6 sm:px-6">
       {error === "no-profe" && (
-        <p className="rounded-lg bg-amber-100 p-3 text-sm text-amber-900">
-          Solo los profes pueden subir vídeos.
-        </p>
+        <p className="notice notice-brass">Solo los profes pueden subir vídeos.</p>
       )}
 
       {videos.length === 0 && (
-        <p className="text-zinc-600">Todavía no hay vídeos. El jueves que viene habrá.</p>
+        <p className="text-paper-dim">Todavía no hay vídeos. El jueves que viene habrá.</p>
       )}
 
       {[...byDate.entries()].map(([date, items]) => (
-        <section key={date} className="flex flex-col gap-3">
-          <h2 className="text-lg font-medium">{formatDate(date)}</h2>
-          <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+        <section key={date} className="flex flex-col gap-2">
+          <h2 className="text-lede">{formatDate(date)}</h2>
+          <div className="card px-4 py-1">
             {items.map((v) => (
-              <li key={v.id}>
-                <Link href={`/v/${v.id}`} className="flex flex-col gap-1">
-                  <div
-                    className="relative w-full overflow-hidden rounded-lg bg-zinc-200 dark:bg-zinc-800"
-                    style={{ aspectRatio: "16 / 9" }}
-                  >
-                    {v.thumbUrl && (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={v.thumbUrl} alt="" className="h-full w-full object-cover" />
-                    )}
-                    {v.duration_s != null && (
-                      <span className="absolute bottom-1 right-1 rounded bg-black/70 px-1 text-xs text-white">
-                        {formatDuration(v.duration_s)}
-                      </span>
-                    )}
-                  </div>
-                  <span className="text-sm font-medium">{v.title}</span>
-                  {v.notes && <span className="line-clamp-2 text-xs text-zinc-600">{v.notes}</span>}
-                </Link>
-              </li>
+              <Link key={v.id} href={`/v/${v.id}`} className="row">
+                <div className="thumb">
+                  {v.thumbUrl && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={v.thumbUrl} alt="" />
+                  )}
+                  {v.duration_s != null && <i>{formatDuration(v.duration_s)}</i>}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <h4 className="truncate text-small font-semibold">{v.title}</h4>
+                  {v.notes ? (
+                    <small className="line-clamp-1 block text-mini text-paper-dim">{v.notes}</small>
+                  ) : (
+                    <small className="block text-mini text-paper-dim">Sin nota</small>
+                  )}
+                  {v.notes && <span className="badge mt-1">Nota del profe</span>}
+                </div>
+              </Link>
             ))}
-          </ul>
+          </div>
         </section>
       ))}
     </main>

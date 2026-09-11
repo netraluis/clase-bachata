@@ -1,26 +1,243 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/* ============================================================
+   Compás — sistema de diseño. Documentado en docs/DESIGN.md.
+   Los tokens se exponen como utilidades de Tailwind (bg-ink,
+   text-paper-dim, font-disp, rounded-card, text-small, ...).
+   ============================================================ */
+@theme {
+  /* Color. La sala está a oscuras: fondo oscuro, y color solo donde significa algo. */
+  --color-ink: #14101a;        /* sala: fondo de página */
+  --color-ink-2: #1f1926;      /* superficie: tarjetas, teléfono */
+  --color-ink-3: #2b2333;      /* separadores suaves, fondos de etiqueta */
+  --color-line: #3b3145;       /* bordes */
+  --color-stage: #0c0910;      /* escenario: fondo del vídeo */
+  --color-paper: #f3eee7;      /* texto */
+  --color-paper-dim: #a99eb4;  /* texto secundario */
+  --color-brass: #e6b44c;      /* corrección: lo que dice quien enseña; también foco y acción */
+  --color-rosa: #e04f7b;       /* duda: lo que pregunta quien aprende; también error */
+  --color-verde: #5fbf8f;      /* resuelto: hecho, subido, nuevo */
+
+  /* Tipografía */
+  --font-sans: var(--font-manrope), system-ui, sans-serif;
+  --font-disp: var(--font-bricolage), var(--font-manrope), system-ui, sans-serif;
+
+  /* Escala: cinco tamaños. Más de cinco y la jerarquía deja de leerse. */
+  --text-mini: 11.5px;
+  --text-mini--line-height: 1.4;
+  --text-small: 13.5px;
+  --text-small--line-height: 1.5;
+  --text-body: 15px;
+  --text-body--line-height: 1.6;
+  --text-lede: 19px;
+  --text-lede--line-height: 1.5;
+  --text-display: 31px;
+  --text-display--line-height: 1.05;
+
+  /* Radio: codifica jerarquía, no es el mismo en todo. */
+  --radius-phone: 26px;
+  --radius-card: 16px;
+  --radius-stamp: 4px;
+  --radius-chip: 20px;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+  body {
+    background: var(--color-ink);
+    color: var(--color-paper);
+    font-family: var(--font-sans);
+    font-size: var(--text-body);
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+  h1, h2, h3 {
+    font-family: var(--font-disp);
+    font-weight: 500;
+    line-height: 1.05;
+    letter-spacing: -0.02em;
+  }
+  a {
+    color: var(--color-brass);
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-brass);
+    outline-offset: 3px;
+    border-radius: 3px;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; animation: none !important; }
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* Componentes. Nombres del sistema original; documentados en docs/DESIGN.md. */
+@layer components {
+  /* Botón. Mínimo 44px de alto: se usa de pie, con prisa. */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 44px;
+    padding: 0 18px;
+    border-radius: var(--radius-chip);
+    border: 1px solid var(--color-line);
+    background: transparent;
+    color: var(--color-paper);
+    font-size: var(--text-small);
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.15s ease, border-color 0.15s ease;
+  }
+  .btn:hover { border-color: var(--color-paper-dim); }
+  .btn:disabled { opacity: 0.45; cursor: default; }
+  .btn-primary {
+    background: var(--color-brass);
+    border-color: var(--color-brass);
+    color: var(--color-ink);
+  }
+  .btn-primary:hover { background: #f0c46a; border-color: #f0c46a; }
+
+  /* Chip: filtro o estado seleccionable. "on" = brass translúcido. */
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    min-height: 32px;
+    padding: 4px 11px;
+    border-radius: var(--radius-chip);
+    border: 1px solid var(--color-line);
+    background: transparent;
+    color: var(--color-paper-dim);
+    font-size: var(--text-small);
+    cursor: pointer;
+    transition: background-color 0.15s ease, color 0.15s ease;
+  }
+  .chip.on, .chip[aria-pressed="true"] {
+    background: rgb(230 180 76 / 0.16);
+    border-color: rgb(230 180 76 / 0.4);
+    color: var(--color-brass);
+  }
+
+  /* Stamp: marca de tiempo o etiqueta de quién habla. */
+  .stamp {
+    display: inline-block;
+    padding: 2px 7px;
+    border-radius: var(--radius-stamp);
+    font-size: var(--text-mini);
+    font-weight: 600;
+    height: fit-content;
+  }
+  .stamp-prof { background: rgb(230 180 76 / 0.18); color: var(--color-brass); }
+  .stamp-alum { background: rgb(224 79 123 / 0.18); color: var(--color-rosa); }
+
+  /* Badge: estado positivo (nuevo, listo). */
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: var(--radius-chip);
+    background: rgb(95 191 143 / 0.16);
+    color: var(--color-verde);
+    font-size: var(--text-mini);
+  }
+
+  /* Tag: rol de una persona. */
+  .tag {
+    display: inline-block;
+    padding: 2px 9px;
+    border-radius: var(--radius-chip);
+    border: 1px solid var(--color-line);
+    color: var(--color-paper-dim);
+    font-size: var(--text-mini);
+  }
+  .tag-p { border-color: rgb(230 180 76 / 0.4); color: var(--color-brass); }
+
+  /* Card: superficie con borde. */
+  .card {
+    background: var(--color-ink-2);
+    border: 1px solid var(--color-line);
+    border-radius: var(--radius-card);
+  }
+
+  /* Campo de formulario. */
+  .field {
+    width: 100%;
+    min-height: 44px;
+    padding: 10px 13px;
+    border-radius: 10px;
+    border: 1px solid var(--color-line);
+    background: var(--color-ink);
+    color: var(--color-paper);
+    font-size: var(--text-body);
+  }
+  .field::placeholder { color: #6f6579; }
+  .field:disabled { opacity: 0.5; }
+
+  /* Avisos. Solo tres colores, con su significado. */
+  .notice {
+    padding: 12px 14px;
+    border-radius: 10px;
+    font-size: var(--text-small);
+    line-height: 1.5;
+  }
+  .notice-rosa { background: rgb(224 79 123 / 0.14); color: #f4a3bb; }
+  .notice-brass { background: rgb(230 180 76 / 0.14); color: var(--color-brass); }
+  .notice-verde { background: rgb(95 191 143 / 0.14); color: var(--color-verde); }
+
+  /* Barra de progreso. */
+  .prog { height: 4px; border-radius: 2px; background: var(--color-ink-3); overflow: hidden; }
+  .prog > i { display: block; height: 4px; background: var(--color-verde); border-radius: 2px; transition: width 0.35s ease; }
+
+  /* Fila de lista: 81px de alto con miniatura 86×57. Caben ocho en pantalla. */
+  .row {
+    display: flex;
+    gap: 11px;
+    padding: 12px 0;
+    border-top: 1px solid var(--color-ink-3);
+    color: inherit;
+    text-decoration: none;
+  }
+  .row:first-child { border-top: 0; }
+  .thumb {
+    width: 86px;
+    height: 57px;
+    border-radius: 7px;
+    background: var(--color-stage);
+    flex: 0 0 auto;
+    position: relative;
+    overflow: hidden;
+  }
+  .thumb > img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .thumb > i {
+    position: absolute;
+    right: 5px;
+    bottom: 4px;
+    font-style: normal;
+    font-size: 10.5px;
+    color: rgb(243 238 231 / 0.8);
+    background: rgb(12 9 16 / 0.6);
+    padding: 0 4px;
+    border-radius: 3px;
+  }
+
+  /* Avatar de iniciales. */
+  .av {
+    width: 31px;
+    height: 31px;
+    border-radius: 50%;
+    background: var(--color-ink-3);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--color-paper-dim);
+    flex: 0 0 auto;
+  }
+  .av-p { background: rgb(230 180 76 / 0.18); color: var(--color-brass); }
+
+  /* Marca. */
+  .mark { font-family: var(--font-disp); font-weight: 700; font-size: 20px; letter-spacing: -0.02em; color: var(--color-paper); text-decoration: none; }
+  .mark em { font-style: normal; color: var(--color-brass); }
 }

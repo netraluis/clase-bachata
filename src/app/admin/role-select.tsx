@@ -26,13 +26,13 @@ export function RoleSelect({ id, role, disabled }: { id: string; role: Role; dis
             } else setError(null);
           });
         }}
-        className="rounded-lg border border-zinc-300 bg-white p-2 text-sm dark:border-zinc-700 dark:bg-black"
+        className="field !w-auto !min-h-9 !py-1 text-small"
       >
         <option value="alumno">alumno</option>
         <option value="profe">profe</option>
         <option value="admin">admin</option>
       </select>
-      {error && <span className="text-xs text-red-600">{error}</span>}
+      {error && <span className="text-mini text-rosa">{error}</span>}
     </div>
   );
 }

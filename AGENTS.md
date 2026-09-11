@@ -7,3 +7,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
 This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
 
 <!-- END:nextjs-agent-rules -->
+
+# Diseño
+
+Toda la interfaz sigue el sistema de diseño Compás, documentado en `docs/DESIGN.md`. Antes de crear o tocar una pantalla, léelo. Tokens y componentes están en `src/app/globals.css`; no se inventan colores, tamaños de texto ni radios fuera de los definidos ahí.

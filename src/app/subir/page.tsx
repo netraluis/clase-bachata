@@ -10,12 +10,19 @@ export default async function SubirPage() {
   if (!user.canUpload) redirect("/?error=no-profe");
 
   return (
-    <main className="flex flex-1 flex-col items-center gap-6 p-6">
-      <div className="flex w-full max-w-md items-center justify-between">
-        <h1 className="text-2xl font-semibold">Subir vídeo</h1>
-        <Link href="/" className="text-sm underline">Volver</Link>
+    <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-5 px-4 py-6 sm:px-6">
+      <Link href="/" className="text-small text-paper-dim hover:text-paper">
+        ← Todos los vídeos
+      </Link>
+      <div>
+        <h1 className="text-display">Subir vídeo</h1>
+        <p className="mt-1 text-small text-paper-dim">
+          Un MP4 del móvil. Se sube directo al almacenamiento, sin pasar por el servidor.
+        </p>
       </div>
-      <Uploader />
+      <div className="card p-5">
+        <Uploader />
+      </div>
     </main>
   );
 }

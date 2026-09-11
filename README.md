@@ -68,6 +68,10 @@ Los iPhone con "Alta eficiencia" graban HEVC (H.265) en un `.mov`. Safari lo rep
 
 Tabla `profiles` con `admin`, `profe` o `alumno`. Quien entra con Google aparece como alumno; el admin le cambia el rol desde `/admin`. Solo admin y profes suben. Todo se aplica con políticas RLS, no solo en la aplicación.
 
+## Diseño
+
+La interfaz sigue el sistema "Compás": oscuro, con color solo donde significa algo (dorado para lo que dice quien enseña, rosa para lo que pregunta quien aprende, verde para lo resuelto), cinco tamaños de texto y áreas de toque de 44 px. Está documentado en [docs/DESIGN.md](docs/DESIGN.md) y la maqueta original en `docs/design-system.html`.
+
 ## Desarrollo
 
 ```bash

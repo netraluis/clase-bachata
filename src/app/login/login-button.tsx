@@ -11,18 +11,12 @@ export function LoginButton() {
     const supabase = createClient();
     await supabase.auth.signInWithOAuth({
       provider: "google",
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
-      },
+      options: { redirectTo: `${window.location.origin}/auth/callback` },
     });
   }
 
   return (
-    <button
-      onClick={signIn}
-      disabled={loading}
-      className="rounded-lg bg-black px-5 py-3 text-white disabled:opacity-50 dark:bg-white dark:text-black"
-    >
+    <button onClick={signIn} disabled={loading} className="btn btn-primary w-full">
       {loading ? "Redirigiendo…" : "Entrar con Google"}
     </button>
   );

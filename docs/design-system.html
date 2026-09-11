@@ -1,0 +1,407 @@
+<!doctype html>
+<!-- Maqueta original del sistema de diseño "Compás", tal como se entregó.
+     Es referencia visual. La implementación real está en src/app/globals.css
+     y se documenta en docs/DESIGN.md. Las pantallas de esta maqueta incluyen
+     funciones que la app todavía no tiene (notas ancladas al segundo, voz,
+     clase deducida por horario). -->
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Compás — sistema de diseño</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,700&family=Manrope:wght@400;500;600&display=swap" rel="stylesheet">
+
+<style>
+:root{
+  --ink:#14101A;
+  --ink-2:#1F1926;
+  --ink-3:#2B2333;
+  --line:#3B3145;
+  --paper:#F3EEE7;
+  --paper-dim:#A99EB4;
+  --brass:#E6B44C;
+  --rosa:#E04F7B;
+  --verde:#5FBF8F;
+  --sans:'Manrope',system-ui,sans-serif;
+  --disp:'Bricolage Grotesque','Manrope',system-ui,sans-serif;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0;background:var(--ink);color:var(--paper);
+  font-family:var(--sans);font-size:16px;line-height:1.65;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:1080px;margin:0 auto;padding:0 28px}
+h1,h2,h3{font-family:var(--disp);font-weight:500;line-height:1.05;margin:0}
+h1{font-size:clamp(38px,6.4vw,76px);letter-spacing:-.025em}
+h2{font-size:clamp(26px,3.4vw,38px);letter-spacing:-.02em}
+h3{font-size:19px;letter-spacing:-.01em}
+p{margin:0 0 1rem;max-width:62ch}
+a{color:var(--brass)}
+:focus-visible{outline:2px solid var(--brass);outline-offset:3px;border-radius:3px}
+
+/* ---------- cabecera ---------- */
+header{border-bottom:1px solid var(--line)}
+.top{display:flex;align-items:baseline;gap:14px;padding:22px 0}
+.mark{font-family:var(--disp);font-weight:700;font-size:20px;letter-spacing:-.02em}
+.mark em{font-style:normal;color:var(--brass)}
+.top span{color:var(--paper-dim);font-size:13px}
+
+.hero{display:grid;grid-template-columns:1.15fr .85fr;gap:56px;align-items:center;padding:72px 0 84px}
+.hero p.lede{font-size:19px;color:var(--paper-dim);max-width:46ch}
+.test{margin-top:34px;border-left:3px solid var(--brass);padding:4px 0 4px 20px}
+.test b{font-family:var(--disp);font-size:26px;font-weight:500;display:block;letter-spacing:-.015em}
+.test span{color:var(--paper-dim);font-size:14px}
+
+/* ---------- teléfono ---------- */
+.phone{
+  width:306px;background:var(--ink-2);border:1px solid var(--line);
+  border-radius:26px;overflow:hidden;margin:0 auto;
+}
+.stage{background:#0C0910;position:relative;height:186px;display:flex;align-items:center;justify-content:center}
+.stage .glyph{width:46px;height:46px;border-radius:50%;border:1px solid rgba(243,238,231,.35);display:flex;align-items:center;justify-content:center}
+.stage .glyph::after{content:"";border-left:11px solid rgba(243,238,231,.85);border-top:7px solid transparent;border-bottom:7px solid transparent;margin-left:3px}
+.bar{position:absolute;left:14px;right:14px;bottom:34px;height:3px;background:rgba(243,238,231,.22);border-radius:2px}
+.played{position:absolute;left:0;top:0;height:3px;background:var(--paper);border-radius:2px;width:26%;transition:width .35s ease}
+.pin{position:absolute;top:-5px;width:13px;height:13px;border-radius:50%;border:0;padding:0;cursor:pointer;transform:translateX(-50%) scale(1);transition:transform .18s ease}
+.pin:hover,.pin[aria-pressed="true"]{transform:translateX(-50%) scale(1.45)}
+.pin.prof{background:var(--brass)}
+.pin.alum{background:var(--rosa)}
+.meta{position:absolute;left:14px;right:14px;bottom:12px;display:flex;justify-content:space-between;font-size:11.5px;color:rgba(243,238,231,.75)}
+.speed{color:rgba(243,238,231,.5)}
+
+.filters{display:flex;gap:6px;padding:12px 14px 4px}
+.chip{font-size:12px;padding:4px 11px;border-radius:20px;border:1px solid var(--line);color:var(--paper-dim);background:none;cursor:default}
+.chip.on{background:rgba(230,180,76,.16);border-color:rgba(230,180,76,.4);color:var(--brass)}
+
+.notes{padding:2px 14px 0;list-style:none;margin:0}
+.notes li{display:flex;gap:10px;padding:12px 0;border-top:1px solid var(--ink-3);transition:opacity .2s}
+.notes li:first-child{border-top:0}
+.notes li.dim{opacity:.34}
+.stamp{font-size:11px;font-weight:600;padding:2px 7px;border-radius:4px;height:fit-content;flex:0 0 auto}
+.stamp.prof{background:rgba(230,180,76,.18);color:var(--brass)}
+.stamp.alum{background:rgba(224,79,123,.18);color:var(--rosa)}
+.who{font-size:11.5px;color:var(--paper-dim);margin:0 0 2px}
+.said{font-size:13.5px;line-height:1.5;margin:0}
+
+.composer{display:flex;align-items:center;gap:9px;padding:11px 14px 15px;border-top:1px solid var(--ink-3);margin-top:4px}
+.composer .at{font-size:11px;padding:3px 8px;border-radius:4px;background:var(--ink-3);color:var(--paper-dim)}
+.composer .ph{flex:1;font-size:13px;color:#6F6579}
+.mic{width:17px;height:17px;border-radius:9px 9px 8px 8px;border:1.5px solid var(--paper-dim);flex:0 0 auto}
+
+/* ---------- secciones ---------- */
+section{padding:76px 0;border-top:1px solid var(--line)}
+.head{max-width:64ch;margin-bottom:44px}
+.head p{color:var(--paper-dim);margin-top:14px}
+
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:22px;counter-reset:s}
+.step{border:1px solid var(--line);border-radius:16px;padding:22px;background:var(--ink-2)}
+.step .n{font-family:var(--disp);font-size:13px;color:var(--brass);display:block;margin-bottom:10px}
+.step p{font-size:14.5px;color:var(--paper-dim);margin:8px 0 0}
+.clock{font-family:var(--disp);font-size:30px;letter-spacing:-.02em;margin-top:18px;display:block}
+
+.screens{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:30px;align-items:start}
+.caption{margin-top:16px;max-width:34ch}
+.caption h3{margin-bottom:6px}
+.caption p{font-size:14px;color:var(--paper-dim);margin:0}
+
+.mini{padding:0 14px 16px}
+.row{display:flex;gap:11px;padding:12px 0;border-top:1px solid var(--ink-3)}
+.thumb{width:86px;height:57px;border-radius:7px;background:#0C0910;flex:0 0 auto;position:relative}
+.thumb i{position:absolute;right:5px;bottom:4px;font-style:normal;font-size:10.5px;color:rgba(243,238,231,.8)}
+.row h4{margin:0;font-size:14px;font-weight:600}
+.row small{display:block;color:var(--paper-dim);font-size:12px;margin-top:2px}
+.badge{display:inline-block;margin-top:6px;font-size:11px;padding:2px 8px;border-radius:20px;background:rgba(95,191,143,.16);color:var(--verde)}
+.phead{display:flex;align-items:center;gap:11px;padding:15px 14px;border-bottom:1px solid var(--ink-3)}
+.phead h4{margin:0;font-size:15px;font-weight:600}
+.phead small{color:var(--paper-dim);font-size:12px}
+.grid6{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;padding:14px}
+.cell{height:56px;border-radius:6px;background:#241E2B}
+.cell.sel{background:#0C0910;box-shadow:inset 0 0 0 2px var(--brass)}
+.ok{padding:18px 14px}
+.prog{height:4px;border-radius:2px;background:var(--ink-3);margin:12px 0 14px}
+.prog i{display:block;height:4px;width:45%;background:var(--verde);border-radius:2px}
+
+/* ---------- admin ---------- */
+.admin{border:1px solid var(--line);border-radius:18px;overflow:hidden;background:var(--ink-2)}
+.admin .bar2{display:flex;align-items:center;gap:12px;padding:16px 20px;border-bottom:1px solid var(--ink-3)}
+.admin .bar2 h3{font-size:16px}
+.admin .bar2 small{margin-left:auto;color:var(--paper-dim);font-size:12.5px}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:1px;background:var(--ink-3)}
+.stat{background:var(--ink-2);padding:18px 20px}
+.stat small{display:block;color:var(--paper-dim);font-size:13px}
+.stat b{font-family:var(--disp);font-size:31px;font-weight:500;letter-spacing:-.02em}
+.stat b.warn{color:var(--brass)}
+.people{padding:6px 20px 18px}
+.person{display:flex;align-items:center;gap:12px;padding:13px 0;border-top:1px solid var(--ink-3);font-size:14.5px}
+.av{width:31px;height:31px;border-radius:50%;background:var(--ink-3);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:var(--paper-dim);flex:0 0 auto}
+.av.p{background:rgba(230,180,76,.18);color:var(--brass)}
+.tag{font-size:11.5px;padding:2px 9px;border-radius:20px;border:1px solid var(--line);color:var(--paper-dim)}
+.tag.p{border-color:rgba(230,180,76,.4);color:var(--brass)}
+.person span:last-child{margin-left:auto;color:var(--paper-dim);font-size:13px}
+
+/* ---------- tokens ---------- */
+.tok{display:grid;grid-template-columns:repeat(auto-fit,minmax(168px,1fr));gap:20px}
+.sw{border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.sw .fill{height:76px}
+.sw .lab{padding:11px 13px;font-size:13px}
+.sw .lab b{display:block;font-weight:600}
+.sw .lab code{color:var(--paper-dim);font-size:12px}
+
+table{width:100%;border-collapse:collapse;font-size:14.5px;margin-top:12px}
+th,td{text-align:left;padding:13px 0;border-bottom:1px solid var(--ink-3);vertical-align:top}
+th{color:var(--paper-dim);font-weight:500;font-size:13px}
+td:first-child{width:30%;font-weight:600}
+td:last-child{color:var(--paper-dim)}
+
+.cut{display:grid;grid-template-columns:1fr 1fr;gap:34px}
+.cut ul{margin:0;padding-left:0;list-style:none}
+.cut li{padding:11px 0;border-top:1px solid var(--ink-3);font-size:15px}
+.cut h3{margin-bottom:6px}
+.cut .keep li::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--verde);margin-right:11px;vertical-align:2px}
+.cut .drop li::before{content:"";display:inline-block;width:7px;height:1.5px;background:var(--rosa);margin-right:11px;vertical-align:5px}
+.cut .drop li{color:var(--paper-dim)}
+
+footer{border-top:1px solid var(--line);padding:34px 0 60px;color:var(--paper-dim);font-size:14px}
+
+@media(max-width:880px){
+  .hero{grid-template-columns:1fr;gap:44px;padding:48px 0 60px}
+  .steps{grid-template-columns:1fr}
+  .cut{grid-template-columns:1fr;gap:24px}
+}
+@media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap top">
+    <span class="mark">Comp<em>á</em>s</span>
+    <span>Sistema de diseño, versión de trabajo</span>
+  </div>
+</header>
+
+<div class="wrap hero">
+  <div>
+    <h1>La clase no se acaba cuando se apaga la música.</h1>
+    <p class="lede">Los vídeos de clase viven hoy en un grupo de WhatsApp donde se hunden en dos días y nadie puede decir «mira el segundo 42». Compás los guarda por clase y engancha cada corrección al momento exacto en que pasa.</p>
+    <div class="test">
+      <b>10 segundos</b>
+      <span>Es el presupuesto entero del profesor para subir el vídeo. Cualquier pantalla que no quepa ahí no entra en la app.</span>
+    </div>
+  </div>
+
+  <div class="phone">
+    <div class="stage">
+      <div class="glyph" aria-hidden="true"></div>
+      <div class="bar">
+        <div class="played" id="played"></div>
+        <button class="pin prof" style="left:18%" data-t="0:42" data-i="0" aria-label="Nota en 0:42"></button>
+        <button class="pin prof" style="left:26%" data-t="1:15" data-i="1" aria-label="Nota en 1:15" aria-pressed="true"></button>
+        <button class="pin alum" style="left:51%" data-t="2:20" data-i="2" aria-label="Nota en 2:20"></button>
+        <button class="pin prof" style="left:79%" data-t="3:34" data-i="3" aria-label="Nota en 3:34"></button>
+      </div>
+      <div class="meta"><span id="now">1:15</span><span class="speed">0.5×, en bucle</span><span>4:32</span></div>
+    </div>
+
+    <div class="filters">
+      <button class="chip on">Todas las notas</button>
+      <button class="chip">Solo Ana</button>
+    </div>
+
+    <ul class="notes" id="notes">
+      <li data-i="0"><span class="stamp prof">0:42</span><div><p class="who">Ana, profesora</p><p class="said">El peso pasa al pie derecho antes de girar, no durante.</p></div></li>
+      <li data-i="1"><span class="stamp prof">1:15</span><div><p class="who">Ana, profesora</p><p class="said">Entrada en el 5, no en el 4. Contad conmigo.</p></div></li>
+      <li data-i="2"><span class="stamp alum">2:20</span><div><p class="who">Marta, alumna</p><p class="said">¿El brazo izquierdo sube o se queda abajo?</p></div></li>
+      <li data-i="3"><span class="stamp prof">3:34</span><div><p class="who">Ana, profesora</p><p class="said">Aquí se cambia de línea. Ojo con el hombro.</p></div></li>
+    </ul>
+
+    <div class="composer"><span class="at">en <span id="at">1:15</span></span><span class="ph">Escribe una nota</span><span class="mic" aria-hidden="true"></span></div>
+  </div>
+</div>
+
+<section class="wrap">
+  <div class="head">
+    <h2>Subir es un gesto, no un formulario</h2>
+    <p>Ana sale de la sala sudando, con el móvil en una mano. Si le pedimos título, curso, descripción y categoría, vuelve al grupo de WhatsApp la segunda semana. La app deduce la clase por el horario y sube en segundo plano.</p>
+  </div>
+  <div class="steps">
+    <div class="step">
+      <span class="n">Primer toque</span>
+      <h3>La clase de hoy ya está elegida</h3>
+      <p>La app sabe que son las 21:05 de un martes. Ofrece «Salsa intermedio» como destino único y grande. El resto de clases quedan debajo, en texto pequeño.</p>
+      <span class="clock">2s</span>
+    </div>
+    <div class="step">
+      <span class="n">Segundo toque</span>
+      <h3>El vídeo más reciente, primero</h3>
+      <p>Rejilla de la galería ordenada por hora de grabación. Lo que acaba de grabar está arriba a la izquierda. Sin título obligatorio: el nombre por defecto es la fecha.</p>
+      <span class="clock">4s</span>
+    </div>
+    <div class="step">
+      <span class="n">Y ya está</span>
+      <h3>Se sube sola, puede cerrar</h3>
+      <p>La subida continúa en segundo plano. Las notas se añaden después, en el sofá, cuando tiene tiempo y ganas de revisar.</p>
+      <span class="clock">3s</span>
+    </div>
+  </div>
+</section>
+
+<section class="wrap">
+  <div class="head">
+    <h2>Lo que ve cada uno</h2>
+    <p>Una sola app para alumna y profesora, con permisos distintos. La administración es una web aparte: quien gestiona una escuela lo hace sentado, no de pie en la sala.</p>
+  </div>
+
+  <div class="screens">
+    <div>
+      <div class="phone">
+        <div class="phead">
+          <div><h4>Salsa intermedio</h4><small>Martes 20:00, con Ana Ruiz</small></div>
+        </div>
+        <div class="filters"><button class="chip on">Todas</button><button class="chip">Coreo</button><button class="chip">Técnica</button></div>
+        <div class="mini">
+          <div class="row"><div class="thumb"><i>4:32</i></div><div><h4>Coreo, segunda parte</h4><small>14 de noviembre</small><span class="badge">3 notas nuevas</span></div></div>
+          <div class="row"><div class="thumb"><i>1:08</i></div><div><h4>Vuelta doble, a medio tiempo</h4><small>14 de noviembre</small></div></div>
+          <div class="row"><div class="thumb"><i>3:51</i></div><div><h4>Coreo, primera parte</h4><small>7 de noviembre</small></div></div>
+        </div>
+      </div>
+      <div class="caption">
+        <h3>La alumna busca un día, no un archivo</h3>
+        <p>Nadie recuerda «vídeo 4832». Recuerda «la clase del martes pasado». Por eso la lista se agrupa por sesión y la fecha pesa más que el título.</p>
+      </div>
+    </div>
+
+    <div>
+      <div class="phone">
+        <div class="phead">
+          <div><h4>Subir a salsa intermedio</h4><small>Detectado por el horario de hoy</small></div>
+        </div>
+        <div class="grid6">
+          <div class="cell sel"></div><div class="cell"></div><div class="cell"></div>
+          <div class="cell"></div><div class="cell"></div><div class="cell"></div>
+        </div>
+        <div class="ok">
+          <h4 style="margin:0;font-size:14.5px">Subiendo en segundo plano</h4>
+          <div class="prog"><i></i></div>
+          <p style="margin:0;font-size:13px;color:var(--paper-dim)">Puedes cerrar la app. Te avisamos cuando esté lista para poner notas.</p>
+        </div>
+      </div>
+      <div class="caption">
+        <h3>La profesora no escribe, habla</h3>
+        <p>Decir «el peso al pie derecho» cuesta cuatro segundos; escribirlo, treinta. La nota de voz anclada al segundo es la función principal, no un extra.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="wrap">
+  <div class="head">
+    <h2>Administración: una web, no una app</h2>
+    <p>Quien dirige la escuela entra una vez por semana a dar de alta gente, ver qué clases se han quedado sin vídeo y controlar cuánto almacenamiento se está pagando.</p>
+  </div>
+  <div class="admin">
+    <div class="bar2"><h3>Escuela Ritmo</h3><small>Acceso desde navegador</small></div>
+    <div class="stats">
+      <div class="stat"><small>Almacenamiento en uso</small><b>312 GB</b></div>
+      <div class="stat"><small>Alumnos con acceso</small><b>148</b></div>
+      <div class="stat"><small>Clases sin vídeo esta semana</small><b class="warn">6</b></div>
+    </div>
+    <div class="people">
+      <div class="person"><span class="av p">AR</span><span>Ana Ruiz</span><span class="tag p">Profesora</span><span>3 clases, 42 vídeos</span></div>
+      <div class="person"><span class="av">MG</span><span>Marta García</span><span class="tag">Alumna</span><span>Acceso hasta el 30 de junio</span></div>
+      <div class="person"><span class="av">JL</span><span>Javier León</span><span class="tag">Alumno</span><span>Sin entrar desde el 2 de octubre</span></div>
+    </div>
+  </div>
+</section>
+
+<section class="wrap">
+  <div class="head">
+    <h2>Paleta y tipografía</h2>
+    <p>La sala está a oscuras y el vídeo es lo único iluminado, así que la interfaz es oscura y el color sólo aparece donde significa algo: dorado para la corrección de quien enseña, rosa para la duda de quien aprende, verde para lo que ya está hecho.</p>
+  </div>
+  <div class="tok">
+    <div class="sw"><div class="fill" style="background:#14101A"></div><div class="lab"><b>Sala</b><code>#14101A</code></div></div>
+    <div class="sw"><div class="fill" style="background:#1F1926"></div><div class="lab"><b>Superficie</b><code>#1F1926</code></div></div>
+    <div class="sw"><div class="fill" style="background:#E6B44C"></div><div class="lab"><b>Corrección</b><code>#E6B44C</code></div></div>
+    <div class="sw"><div class="fill" style="background:#E04F7B"></div><div class="lab"><b>Duda</b><code>#E04F7B</code></div></div>
+    <div class="sw"><div class="fill" style="background:#5FBF8F"></div><div class="lab"><b>Resuelto</b><code>#5FBF8F</code></div></div>
+    <div class="sw"><div class="fill" style="background:#F3EEE7"></div><div class="lab"><b>Texto</b><code>#F3EEE7</code></div></div>
+  </div>
+
+  <table>
+    <tr><th>Decisión</th><th>Valor</th><th>Motivo</th></tr>
+    <tr><td>Familia de titulares</td><td>Bricolage Grotesque, 500</td><td>Tiene carácter sin ser decorativa; aguanta bien el tamaño grande del reproductor.</td></tr>
+    <tr><td>Familia de interfaz</td><td>Manrope, 400 y 600</td><td>Alta legibilidad a 13px, que es donde vive casi todo el texto de la app.</td></tr>
+    <tr><td>Escala</td><td>11,5 / 13,5 / 15 / 19 / 31</td><td>Cinco tamaños. Más de cinco y la jerarquía deja de leerse.</td></tr>
+    <tr><td>Altura de fila</td><td>81px con miniatura de 86×57</td><td>Caben ocho clases en pantalla sin desplazar.</td></tr>
+    <tr><td>Área de toque</td><td>44px mínimo en el reproductor</td><td>Se usa de pie, con prisa y con las manos sudadas.</td></tr>
+    <tr><td>Radio</td><td>26px teléfono, 16px tarjeta, 4px marca de tiempo</td><td>El radio codifica jerarquía; no es el mismo en todo.</td></tr>
+    <tr><td>Movimiento</td><td>Sólo como respuesta a un toque</td><td>Saltar a un minuto debe sentirse instantáneo, no animado.</td></tr>
+  </table>
+</section>
+
+<section class="wrap">
+  <div class="head">
+    <h2>Dentro y fuera de la primera versión</h2>
+    <p>La trampa de todas las apps de este tipo es convertirse en una plataforma social. Un entrenador escribió sobre una de ellas que sólo quería una colección de vídeos que pudiera abrir rápido, y le dieron funciones que no pidió.</p>
+  </div>
+  <div class="cut">
+    <div>
+      <h3>Entra</h3>
+      <ul class="keep">
+        <li>Subida en tres toques con clase deducida</li>
+        <li>Notas ancladas al segundo, en texto y en voz</li>
+        <li>Reproducción a 0.5× y bucle sobre un fragmento</li>
+        <li>Filtro para ver sólo las notas de quien enseña</li>
+        <li>Quién puede ver el vídeo, visible en la cabecera</li>
+        <li>Caducidad automática de los vídeos a los seis meses</li>
+      </ul>
+    </div>
+    <div>
+      <h3>Se queda fuera</h3>
+      <ul class="drop">
+        <li>Perfiles públicos y seguidores</li>
+        <li>Me gusta y recuento de reproducciones</li>
+        <li>Muro común de toda la escuela</li>
+        <li>Chat general fuera del vídeo</li>
+        <li>Etiquetas libres escritas por el alumno</li>
+        <li>Análisis automático de movimiento</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="wrap" style="padding-bottom:40px">
+  <div class="head" style="margin-bottom:0">
+    <h2>El riesgo que hay que resolver antes de escribir código</h2>
+    <p>Ciento cuarenta y ocho alumnos grabados cada semana son cientos de gigas al año y, sobre todo, son personas identificables. En la Unión Europea eso exige consentimiento explícito y un plazo de borrado. No es papeleo posterior: cambia la interfaz, porque obliga a que cada vídeo diga en su cabecera quién puede verlo y cuándo desaparece.</p>
+  </div>
+</section>
+
+<footer><div class="wrap">Compás, propuesta de diseño. Las pantallas son maquetas estáticas: la validación real es cronometrar a un profesor subiendo un vídeo.</div></footer>
+
+<script>
+(function(){
+  var pins=[].slice.call(document.querySelectorAll('.pin'));
+  var items=[].slice.call(document.querySelectorAll('#notes li'));
+  var played=document.getElementById('played');
+  var now=document.getElementById('now');
+  var at=document.getElementById('at');
+  function select(i){
+    pins.forEach(function(p){p.setAttribute('aria-pressed',String(+p.dataset.i===i));});
+    items.forEach(function(li){li.classList.toggle('dim',+li.dataset.i!==i);});
+    var pin=pins[i];
+    played.style.width=pin.style.left;
+    now.textContent=pin.dataset.t;
+    at.textContent=pin.dataset.t;
+  }
+  pins.forEach(function(p){p.addEventListener('click',function(){select(+p.dataset.i);});});
+  select(1);
+})();
+</script>
+</body>
+</html>

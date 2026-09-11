@@ -59,58 +59,66 @@ export function Player({ src, ratio, vertical }: { src: string; ratio: string; v
     if (which === "b" && b != null) setB(Math.max((a ?? 0) + 0.1, Math.min(b + delta, dur)));
   }
 
-  const btn = "rounded-lg border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700";
-  const btnOn = "rounded-lg bg-black px-3 py-2 text-sm text-white dark:bg-white dark:text-black";
-
   return (
-    <div className="flex flex-col gap-3">
-      <div className={vertical ? "mx-auto w-full max-w-sm" : "w-full"}>
-        <video
-          ref={ref}
-          controls
-          playsInline
-          preload="metadata"
-          src={src}
-          onTimeUpdate={(e) => setNow(e.currentTarget.currentTime)}
-          className="w-full rounded-lg bg-black"
-          style={{ aspectRatio: ratio }}
-        />
+    <div className="flex flex-col gap-4">
+      {/* Escenario: lo único iluminado de la sala */}
+      <div className="overflow-hidden rounded-card bg-stage">
+        <div className={vertical ? "mx-auto w-full max-w-sm" : "w-full"}>
+          <video
+            ref={ref}
+            controls
+            playsInline
+            preload="metadata"
+            src={src}
+            onTimeUpdate={(e) => setNow(e.currentTarget.currentTime)}
+            className="mx-auto block max-h-[70vh] w-full bg-stage object-contain"
+            style={{ aspectRatio: ratio }}
+          />
+        </div>
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
-        <span className="text-sm text-zinc-600">Velocidad</span>
+        <span className="mr-1 text-small text-paper-dim">Velocidad</span>
         {SPEEDS.map((s) => (
-          <button key={s} type="button" onClick={() => setSpeed(s)} className={speed === s ? btnOn : btn}>
-            {s === 1 ? "1x" : `${s}x`}
+          <button
+            key={s}
+            type="button"
+            onClick={() => setSpeed(s)}
+            aria-pressed={speed === s}
+            className="chip"
+          >
+            {s === 1 ? "1×" : `${s}×`}
           </button>
         ))}
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
-        <span className="text-sm text-zinc-600">Bucle</span>
-        <button type="button" onClick={markA} className={a != null ? btnOn : btn}>
+        <span className="mr-1 text-small text-paper-dim">Bucle</span>
+        <button type="button" onClick={markA} aria-pressed={a != null} className="chip">
           {a != null ? `Inicio ${fmt(a)}` : "Marcar inicio"}
         </button>
-        <button type="button" onClick={markB} className={b != null ? btnOn : btn}>
+        <button type="button" onClick={markB} aria-pressed={b != null} className="chip">
           {b != null ? `Fin ${fmt(b)}` : "Marcar fin"}
         </button>
         {(a != null || b != null) && (
-          <button type="button" onClick={clearLoop} className={btn}>
+          <button type="button" onClick={clearLoop} className="chip">
             Quitar
           </button>
         )}
       </div>
 
       {loopOn && (
-        <div className="flex flex-wrap items-center gap-2 text-sm">
-          <span className="text-zinc-600">Ajustar</span>
-          <span>inicio</span>
-          <button type="button" onClick={() => nudge("a", -0.5)} className={btn}>−0,5 s</button>
-          <button type="button" onClick={() => nudge("a", 0.5)} className={btn}>+0,5 s</button>
-          <span>fin</span>
-          <button type="button" onClick={() => nudge("b", -0.5)} className={btn}>−0,5 s</button>
-          <button type="button" onClick={() => nudge("b", 0.5)} className={btn}>+0,5 s</button>
-          <span className="text-zinc-600">· repitiendo {fmt(a)} → {fmt(b)} · {fmt(now)}</span>
+        <div className="flex flex-wrap items-center gap-2 text-small">
+          <span className="mr-1 text-paper-dim">Ajustar</span>
+          <span className="stamp stamp-prof">inicio</span>
+          <button type="button" onClick={() => nudge("a", -0.5)} className="chip">−0,5 s</button>
+          <button type="button" onClick={() => nudge("a", 0.5)} className="chip">+0,5 s</button>
+          <span className="stamp stamp-prof">fin</span>
+          <button type="button" onClick={() => nudge("b", -0.5)} className="chip">−0,5 s</button>
+          <button type="button" onClick={() => nudge("b", 0.5)} className="chip">+0,5 s</button>
+          <span className="text-mini text-paper-dim">
+            {fmt(a)} → {fmt(b)} · ahora {fmt(now)}
+          </span>
         </div>
       )}
     </div>

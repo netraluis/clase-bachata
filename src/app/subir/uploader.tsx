@@ -138,11 +138,11 @@ export function Uploader() {
   }
 
   const busy = phase !== "idle" && phase !== "hecho";
-  const inputClass = "rounded-lg border border-zinc-300 p-2 dark:border-zinc-700";
+  const inputClass = "field";
 
   return (
-    <form onSubmit={submit} className="flex w-full max-w-md flex-col gap-4">
-      <label className="flex flex-col gap-1 text-sm">
+    <form onSubmit={submit} className="flex w-full flex-col gap-4">
+      <label className="flex flex-col gap-1 text-small text-paper-dim">
         Vídeo (MP4)
         <input
           type="file"
@@ -154,7 +154,7 @@ export function Uploader() {
       </label>
 
       {file && probe && (
-        <p className="text-xs text-zinc-500">
+        <p className="text-mini text-paper-dim">
           {isH264(probe.videoCodec) ? "H.264" : probe.videoCodec ?? "códec desconocido"}
           {probe.width && probe.height ? ` · ${probe.width}×${probe.height}` : ""}
           {probe.duration != null ? ` · ${Math.round(probe.duration)} s` : ""}
@@ -162,7 +162,7 @@ export function Uploader() {
         </p>
       )}
 
-      <label className="flex flex-col gap-1 text-sm">
+      <label className="flex flex-col gap-1 text-small text-paper-dim">
         Título
         <input
           value={title}
@@ -174,7 +174,7 @@ export function Uploader() {
         />
       </label>
 
-      <label className="flex flex-col gap-1 text-sm">
+      <label className="flex flex-col gap-1 text-small text-paper-dim">
         Fecha de la clase
         <input
           type="date"
@@ -186,7 +186,7 @@ export function Uploader() {
         />
       </label>
 
-      <label className="flex flex-col gap-1 text-sm">
+      <label className="flex flex-col gap-1 text-small text-paper-dim">
         Nota para la clase (opcional)
         <textarea
           value={notes}
@@ -198,19 +198,18 @@ export function Uploader() {
         />
       </label>
 
-      {error && <p className="rounded-lg bg-red-100 p-3 text-sm text-red-900">{error}</p>}
-      {warning && <p className="rounded-lg bg-amber-100 p-3 text-sm text-amber-900">{warning}</p>}
+      {error && <p className="notice notice-rosa">{error}</p>}
+      {warning && <p className="notice notice-brass">{warning}</p>}
 
       {busy && (
-        <div className="flex flex-col gap-1 text-sm">
+        <div className="flex flex-col gap-2 text-small">
           <span>
             {phase === "preparando" && "Leyendo el vídeo…"}
             {phase === "subiendo" && `Subiendo… ${Math.round(progress * 100)}%`}
             {phase === "guardando" && "Guardando…"}
           </span>
-          <div className="h-2 w-full overflow-hidden rounded bg-zinc-200 dark:bg-zinc-800">
-            <div
-              className="h-full bg-black transition-[width] dark:bg-white"
+          <div className="prog">
+            <i
               style={{
                 width: `${phase === "subiendo" ? progress * 100 : phase === "preparando" ? 0 : 100}%`,
               }}
@@ -222,7 +221,7 @@ export function Uploader() {
       <button
         type="submit"
         disabled={!file || busy}
-        className="rounded-lg bg-black px-5 py-3 text-white disabled:opacity-50 dark:bg-white dark:text-black"
+        className="btn btn-primary"
       >
         {busy ? "Subiendo…" : "Subir vídeo"}
       </button>
