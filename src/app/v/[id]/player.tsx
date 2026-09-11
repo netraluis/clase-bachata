@@ -41,7 +41,6 @@ export function Player({
   const [selected, setSelected] = useState<string | null>(null);
   const [hovered, setHovered] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
-  const [draftAt, setDraftAt] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pending, start] = useTransition();
 
@@ -99,34 +98,24 @@ export function Player({
     if (a != null && now > a) seek(a);
   }
 
-  // Escribir una nota: el vídeo se pausa y el momento queda fijado en el
-  // fotograma que se ve. Es lo que hacen Frame.io y Vimeo Review.
-  function anchorHere() {
-    pause();
-    setDraftAt(ref.current?.currentTime ?? now);
-    textRef.current?.focus();
-  }
+  // Escribir una nota: el vídeo se pausa al enfocar el campo, y el tiempo de
+  // la nota es siempre el del cabezal. Si mueves el vídeo, la nota se mueve.
   function onDraftFocus() {
-    if (draftAt == null) anchorHere();
-    else pause();
+    pause();
   }
   function submitNote(e: React.FormEvent) {
     e.preventDefault();
-    const t = draftAt ?? now;
+    const t = ref.current?.currentTime ?? now;
     const body = draft;
     setError(null);
     start(async () => {
       const res = await addComment(videoId, t, body);
       if (res.error) setError(res.error);
-      else {
-        setDraft("");
-        setDraftAt(null);
-      }
+      else setDraft("");
     });
   }
   function cancelDraft() {
     setDraft("");
-    setDraftAt(null);
   }
   function remove(c: Comment) {
     start(async () => {
@@ -214,11 +203,6 @@ export function Player({
         <button type="button" onClick={togglePlay} className="btn !min-h-9">
           {playing ? "Pausa" : "Reproducir"}
         </button>
-        {viewer?.canWrite && (
-          <button type="button" onClick={anchorHere} className="btn btn-primary !min-h-9">
-            Nota en {formatStamp(now)}
-          </button>
-        )}
         <span className="ml-2 text-small text-paper-dim">Velocidad</span>
         {SPEEDS.map((s) => (
           <button key={s} type="button" onClick={() => setSpeed(s)} aria-pressed={speed === s} className="chip">
@@ -300,20 +284,12 @@ export function Player({
 
         {/* Compositor: solo profes y admin */}
         {viewer?.canWrite ? (
-          <form onSubmit={submitNote} className="flex flex-col gap-2 border-t border-ink-3 px-4 py-3">
-            <div className="flex flex-wrap items-center gap-2 text-mini text-paper-dim">
-              {draftAt != null ? (
-                <>
-                  <button type="button" className="stamp stamp-prof" onClick={anchorHere} title="Mover la nota al momento actual">
-                    en {formatStamp(draftAt)}
-                  </button>
-                  <span>La nota queda en el fotograma que ves. Mueve el vídeo y pulsa el tiempo para cambiarla.</span>
-                </>
-              ) : (
-                <span>Al escribir, el vídeo se pausa y la nota queda en ese momento.</span>
-              )}
-            </div>
-            <div className="flex items-end gap-2">
+          <form onSubmit={submitNote} className="flex flex-col gap-3 border-t border-ink-3 px-4 py-4">
+            <div className="flex items-end gap-4">
+              <div className="shrink-0">
+                <span className="block text-mini text-paper-dim">Nota en</span>
+                <span className="block font-disp text-display font-medium text-brass tabular-nums">{formatStamp(now)}</span>
+              </div>
               <textarea
                 ref={textRef}
                 value={draft}
@@ -324,16 +300,19 @@ export function Player({
                 className="field flex-1"
                 disabled={pending}
               />
-              <div className="flex flex-col gap-1">
-                <button type="submit" className="btn btn-primary !min-h-10" disabled={pending || !draft.trim()}>
-                  Guardar
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <button type="submit" className="btn btn-primary !min-h-10" disabled={pending || !draft.trim()}>
+                Guardar en {formatStamp(now)}
+              </button>
+              {draft && (
+                <button type="button" onClick={cancelDraft} className="btn !min-h-10">
+                  Cancelar
                 </button>
-                {(draft || draftAt != null) && (
-                  <button type="button" onClick={cancelDraft} className="btn !min-h-8 text-mini">
-                    Cancelar
-                  </button>
-                )}
-              </div>
+              )}
+              <span className="text-mini text-paper-dim">
+                El vídeo se pausa mientras escribes. Muévelo para cambiar el momento de la nota.
+              </span>
             </div>
           </form>
         ) : (
