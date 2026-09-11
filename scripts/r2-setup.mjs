@@ -15,7 +15,7 @@ if (!Buckets?.some(b=>b.Name===R2_BUCKET)) {
 }
 
 await s3.send(new PutBucketCorsCommand({ Bucket:R2_BUCKET, CORSConfiguration:{ CORSRules:[{
-  AllowedOrigins:["http://localhost:3000","http://100-64-45-119.sslip.io:3000"],
+  AllowedOrigins:["http://localhost:3000","http://100-64-45-119.sslip.io:3000","https://clase-bachata.vercel.app"],
   AllowedMethods:["PUT","GET","HEAD"],
   AllowedHeaders:["*"],
   ExposeHeaders:["ETag"],
