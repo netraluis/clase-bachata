@@ -2,8 +2,9 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { requestOrigin } from "@/lib/request-origin";
 
-// Refresca el token de sesión en cada request y redirige a /login
-// si no hay usuario. Se llama desde src/proxy.ts.
+// Refresca el token de sesión en cada request. La vista de alumnos es
+// pública: solo exigen sesión subir, administrar y la API.
+// Se llama desde src/proxy.ts.
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
 
@@ -34,10 +35,12 @@ export async function updateSession(request: NextRequest) {
   const user = data?.claims;
 
   const { pathname } = request.nextUrl;
-  const isPublic =
-    pathname.startsWith("/login") || pathname.startsWith("/auth");
+  const isProtected =
+    pathname.startsWith("/subir") ||
+    pathname.startsWith("/admin") ||
+    pathname.startsWith("/api");
 
-  if (!user && !isPublic) {
+  if (!user && isProtected) {
     // Las rutas de API responden 401 en JSON, no con una redirección HTML.
     if (pathname.startsWith("/api")) {
       return NextResponse.json({ error: "No has iniciado sesión" }, { status: 401 });

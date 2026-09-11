@@ -15,6 +15,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Clase de bachata",
   description: "Vídeos de la clase de bachata de los jueves",
+  robots: { index: false, follow: false },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

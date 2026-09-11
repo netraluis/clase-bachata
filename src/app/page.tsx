@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { getSessionUser } from "@/lib/auth";
 import { listVideos, formatDate, formatDuration } from "@/lib/videos";
 
@@ -11,7 +10,6 @@ export default async function Home({
   searchParams: Promise<{ error?: string }>;
 }) {
   const user = await getSessionUser();
-  if (!user) redirect("/login");
   const { error } = await searchParams;
   const videos = await listVideos();
 
@@ -24,22 +22,31 @@ export default async function Home({
       <header className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-semibold">Clase de bachata</h1>
         <div className="flex items-center gap-3 text-sm">
-          <span className="text-zinc-600">
-            {user.name ?? user.email} <strong>· {user.role}</strong>
-          </span>
-          {user.isAdmin && (
+          {!user && (
+            <Link href="/login" className="underline">
+              Entrar
+            </Link>
+          )}
+          {user && (
+            <span className="text-zinc-600">
+              {user.name ?? user.email} <strong>· {user.role}</strong>
+            </span>
+          )}
+          {user?.isAdmin && (
             <Link href="/admin" className="underline">
               Personas
             </Link>
           )}
-          {user.canUpload && (
+          {user?.canUpload && (
             <Link href="/subir" className="rounded-lg bg-black px-3 py-2 text-white dark:bg-white dark:text-black">
               Subir vídeo
             </Link>
           )}
-          <form action="/auth/signout" method="post">
-            <button className="underline">Salir</button>
-          </form>
+          {user && (
+            <form action="/auth/signout" method="post">
+              <button className="underline">Salir</button>
+            </form>
+          )}
         </div>
       </header>
 

@@ -15,7 +15,9 @@ export default async function LoginPage({
   return (
     <main className="flex flex-1 flex-col items-center justify-center gap-6 p-6 text-center">
       <h1 className="text-3xl font-semibold">Clase de bachata</h1>
-      <p className="text-zinc-600">Los vídeos de los jueves, sin buscarlos en WhatsApp.</p>
+      <p className="text-zinc-600">
+        Para ver los vídeos no hace falta entrar. Esto es para los profes, que suben los vídeos.
+      </p>
       <LoginButton />
       {error && (
         <p className="text-sm text-red-600">

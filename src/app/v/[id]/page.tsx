@@ -1,15 +1,11 @@
 import Link from "next/link";
-import { notFound, redirect } from "next/navigation";
-import { getSessionUser } from "@/lib/auth";
+import { notFound } from "next/navigation";
 import { getVideo, formatDate } from "@/lib/videos";
 import { Player } from "./player";
 
 export const dynamic = "force-dynamic";
 
 export default async function VideoPage({ params }: { params: Promise<{ id: string }> }) {
-  const user = await getSessionUser();
-  if (!user) redirect("/login");
-
   const { id } = await params;
   if (!/^[0-9a-f-]{36}$/.test(id)) notFound();
   const v = await getVideo(id);
