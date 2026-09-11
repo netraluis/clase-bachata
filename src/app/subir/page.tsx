@@ -3,11 +3,11 @@ import { redirect } from "next/navigation";
 import { getSessionUser } from "@/lib/auth";
 import { Uploader } from "./uploader";
 
-// Solo los emails de ALLOWED_EMAILS pueden entrar aquí.
+// Solo admin y profes (rol en la tabla profiles).
 export default async function SubirPage() {
   const user = await getSessionUser();
   if (!user) redirect("/login");
-  if (!user.profe) redirect("/?error=no-profe");
+  if (!user.canUpload) redirect("/?error=no-profe");
 
   return (
     <main className="flex flex-1 flex-col items-center gap-6 p-6">

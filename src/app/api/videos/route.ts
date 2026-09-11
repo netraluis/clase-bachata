@@ -19,7 +19,7 @@ type Body = {
 export async function POST(request: Request) {
   const user = await getSessionUser();
   if (!user) return NextResponse.json({ error: "No has iniciado sesión" }, { status: 401 });
-  if (!user.profe) return NextResponse.json({ error: "Solo los profes pueden subir" }, { status: 403 });
+  if (!user.canUpload) return NextResponse.json({ error: "Solo los profes pueden subir" }, { status: 403 });
 
   let b: Body = {};
   try {
