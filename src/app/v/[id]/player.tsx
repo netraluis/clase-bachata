@@ -22,6 +22,7 @@ const MIN_GAP = 0.5;
 export function Player({
   videoId,
   src,
+  poster,
   ratio,
   vertical,
   duration: durationProp,
@@ -31,6 +32,7 @@ export function Player({
 }: {
   videoId: string;
   src: string;
+  poster: string | null;
   ratio: string;
   vertical: boolean;
   duration: number;
@@ -119,9 +121,6 @@ export function Player({
     }
     if (Math.abs(t - a) <= Math.abs(t - b)) setA(Math.min(t, b - MIN_GAP));
     else setB(Math.max(t, a + MIN_GAP));
-  }
-  function markHere() {
-    markAt(ref.current?.currentTime ?? now);
   }
   function enterLoopMode() {
     setLoopMode(true);
@@ -224,6 +223,7 @@ export function Player({
             playsInline
             preload="metadata"
             src={src}
+            poster={poster ?? undefined}
             onClick={togglePlay}
             onPlay={() => setPlaying(true)}
             onPause={() => setPlaying(false)}
@@ -322,14 +322,14 @@ export function Player({
               Modo repetir
             </CardTitle>
             <CardDescription>
-              {step === "setA" && "Toca en la barra del vídeo donde empieza el trozo, o pulsa el botón cuando el vídeo llegue ahí."}
-              {step === "setB" && a != null && `Inicio en ${formatStamp(a)}. Ahora toca donde termina, o pulsa el botón cuando llegue.`}
-              {step === "ready" && a != null && b != null && `Repitiendo de ${formatStamp(a)} a ${formatStamp(b)}. Arrastra los extremos verdes de la barra o ajusta con los botones.`}
+              <ol className="list-decimal space-y-0.5 pl-5">
+                <li className={step === "setA" ? "font-medium text-foreground" : ""}>Toca en la barra del vídeo donde empieza el trozo.</li>
+                <li className={step === "setB" ? "font-medium text-foreground" : ""}>Toca donde termina. Empieza a repetirse solo.</li>
+                <li className={step === "ready" ? "font-medium text-foreground" : ""}>Si hace falta, arrastra los extremos verdes o afina con los botones.</li>
+              </ol>
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-wrap items-center gap-2">
-            {step === "setA" && <Button onClick={markHere}>Empieza aquí ({formatStamp(now)})</Button>}
-            {step === "setB" && <Button onClick={markHere}>Termina aquí ({formatStamp(now)})</Button>}
             {step === "ready" && (
               <>
                 <span className="text-sm text-muted-foreground">Inicio</span>
@@ -341,14 +341,14 @@ export function Player({
                 <Button variant="outline" size="sm" className="ml-2" onClick={resetLoop}>Elegir otro trozo</Button>
               </>
             )}
-          </CardContent>
-          <CardFooter className="border-t">
-            <Button variant="destructive" onClick={exitLoopMode}>
+            {step !== "ready" && a != null && (
+              <span className="text-sm text-muted-foreground">Inicio en {formatStamp(a)}.</span>
+            )}
+            <Button variant="destructive" size="sm" className="ml-auto" onClick={exitLoopMode}>
               <X data-icon="inline-start" />
-              Salir del modo repetir
+              Salir
             </Button>
-            <span className="ml-3 text-xs text-muted-foreground">También con Esc.</span>
-          </CardFooter>
+          </CardContent>
         </Card>
       )}
 

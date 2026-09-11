@@ -137,7 +137,7 @@ export function sessionTitle(s: { title: string | null; date: string }): string 
 
 export async function getVideo(
   id: string,
-): Promise<(VideoRow & { videoUrl: string; session: Session; course: Course; comments: Comment[] }) | null> {
+): Promise<(VideoRow & { videoUrl: string; posterUrl: string | null; session: Session; course: Course; comments: Comment[] }) | null> {
   const supabase = await createClient();
   const { data: v } = await supabase.from("videos").select(VIDEO_COLS).eq("id", id).maybeSingle();
   if (!v) return null;
@@ -162,6 +162,7 @@ export async function getVideo(
   return {
     ...video,
     videoUrl: await presignGet(video.r2_key),
+    posterUrl: video.thumb_key ? await presignGet(video.thumb_key) : null,
     session: session as Session,
     course: course as Course,
     comments: ((comments ?? []) as Comment[]).map((c) => ({ ...c, t_seconds: Number(c.t_seconds) })),

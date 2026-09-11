@@ -39,6 +39,7 @@ export default async function VideoPage({ params }: { params: Promise<{ id: stri
       <Player
         videoId={v.id}
         src={v.videoUrl}
+        poster={v.posterUrl}
         ratio={ratio}
         vertical={vertical}
         duration={v.duration_s ?? 0}
