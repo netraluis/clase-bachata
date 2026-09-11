@@ -1,29 +1,55 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
+import { useEffect, useRef, useState, useTransition } from "react";
+import type { Comment } from "@/lib/data";
+import { formatStamp } from "@/lib/format";
+import type { Role } from "@/lib/auth";
+import { addComment, deleteComment } from "./actions";
 
 const SPEEDS = [0.5, 0.75, 1] as const;
+type Viewer = { id: string; role: Role; isAdmin: boolean } | null;
 
-function fmt(t: number): string {
-  const m = Math.floor(t / 60);
-  const s = t - m * 60;
-  return `${m}:${s.toFixed(1).padStart(4, "0")}`;
-}
+const ROLE_LABEL: Record<Role, string> = { admin: "admin", profe: "profe", alumno: "alumno" };
 
-export function Player({ src, ratio, vertical }: { src: string; ratio: string; vertical: boolean }) {
+export function Player({
+  videoId,
+  src,
+  ratio,
+  vertical,
+  duration: durationProp,
+  comments,
+  profeNote,
+  viewer,
+}: {
+  videoId: string;
+  src: string;
+  ratio: string;
+  vertical: boolean;
+  duration: number;
+  comments: Comment[];
+  profeNote: string | null;
+  viewer: Viewer;
+}) {
   const ref = useRef<HTMLVideoElement>(null);
+  const [playing, setPlaying] = useState(false);
+  const [now, setNow] = useState(0);
+  const [duration, setDuration] = useState(durationProp);
   const [speed, setSpeed] = useState<number>(1);
   const [a, setA] = useState<number | null>(null);
   const [b, setB] = useState<number | null>(null);
-  const [now, setNow] = useState(0);
+  const [selected, setSelected] = useState<string | null>(null);
+  const [onlyProfes, setOnlyProfes] = useState(false);
+  const [draft, setDraft] = useState("");
+  const [draftAt, setDraftAt] = useState<number | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [pending, start] = useTransition();
 
-  // Velocidad: una línea, lo que WhatsApp no hace.
   useEffect(() => {
     if (ref.current) ref.current.playbackRate = speed;
   }, [speed]);
 
-  // Bucle A-B. `timeupdate` solo dispara ~4 veces por segundo, así que
-  // se comprueba con requestAnimationFrame para no pasarse del punto B.
+  // Bucle A-B con requestAnimationFrame: timeupdate solo dispara ~4 veces/s.
   useEffect(() => {
     const video = ref.current;
     if (!video || a == null || b == null || b <= a) return;
@@ -38,89 +64,226 @@ export function Player({ src, ratio, vertical }: { src: string; ratio: string; v
 
   const loopOn = a != null && b != null && b > a;
 
+  function seek(t: number) {
+    const video = ref.current;
+    if (!video) return;
+    video.currentTime = Math.max(0, Math.min(t, duration || t));
+    setNow(video.currentTime);
+  }
+  function togglePlay() {
+    const video = ref.current;
+    if (!video) return;
+    if (video.paused) void video.play();
+    else video.pause();
+  }
+  function onBarClick(e: React.MouseEvent<HTMLDivElement>) {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const f = (e.clientX - rect.left) / rect.width;
+    seek(f * duration);
+  }
+  function pick(c: Comment) {
+    setSelected(c.id === selected ? null : c.id);
+    seek(c.t_seconds);
+  }
   function markA() {
-    const t = ref.current?.currentTime ?? 0;
-    setA(t);
-    if (b != null && b <= t) setB(null);
+    setA(now);
+    if (b != null && b <= now) setB(null);
   }
   function markB() {
-    const t = ref.current?.currentTime ?? 0;
     if (a == null) setA(0);
-    setB(t);
-    if (a != null && t > a && ref.current) ref.current.currentTime = a;
+    setB(now);
+    if (a != null && now > a) seek(a);
   }
-  function clearLoop() {
-    setA(null);
-    setB(null);
+  function submitNote(e: React.FormEvent) {
+    e.preventDefault();
+    const t = draftAt ?? now;
+    const body = draft;
+    setError(null);
+    start(async () => {
+      const res = await addComment(videoId, t, body);
+      if (res.error) setError(res.error);
+      else {
+        setDraft("");
+        setDraftAt(null);
+      }
+    });
   }
-  function nudge(which: "a" | "b", delta: number) {
-    const dur = ref.current?.duration ?? Infinity;
-    if (which === "a" && a != null) setA(Math.max(0, Math.min(a + delta, (b ?? dur) - 0.1)));
-    if (which === "b" && b != null) setB(Math.max((a ?? 0) + 0.1, Math.min(b + delta, dur)));
+  function remove(c: Comment) {
+    start(async () => {
+      const res = await deleteComment(videoId, c.id);
+      if (res.error) setError(res.error);
+    });
   }
+
+  const visible = onlyProfes ? comments.filter((c) => c.author_role !== "alumno") : comments;
+  const played = duration ? Math.min(100, (now / duration) * 100) : 0;
+  const status = [speed !== 1 ? `${speed}×` : null, loopOn ? "en bucle" : null].filter(Boolean).join(", ");
 
   return (
     <div className="flex flex-col gap-4">
-      {/* Escenario: lo único iluminado de la sala */}
-      <div className="overflow-hidden rounded-card bg-stage">
+      {/* Escenario */}
+      <div className="stage">
         <div className={vertical ? "mx-auto w-full max-w-sm" : "w-full"}>
           <video
             ref={ref}
-            controls
             playsInline
             preload="metadata"
             src={src}
+            onClick={togglePlay}
+            onPlay={() => setPlaying(true)}
+            onPause={() => setPlaying(false)}
             onTimeUpdate={(e) => setNow(e.currentTarget.currentTime)}
-            className="mx-auto block max-h-[70vh] w-full bg-stage object-contain"
+            onLoadedMetadata={(e) => setDuration(e.currentTarget.duration || durationProp)}
+            className="mx-auto block max-h-[70vh] w-full cursor-pointer bg-stage object-contain"
             style={{ aspectRatio: ratio }}
           />
         </div>
+        {!playing && <div className="glyph" aria-hidden="true" />}
+        <div className="stage-shade" />
+
+        <div className="bar" onClick={onBarClick} role="slider" aria-label="Posición" aria-valuemin={0} aria-valuemax={duration} aria-valuenow={now}>
+          <div className="played" style={{ width: `${played}%` }} />
+          {duration > 0 &&
+            comments.map((c) => (
+              <button
+                key={c.id}
+                type="button"
+                className={`pin ${c.author_role === "alumno" ? "pin-alum" : "pin-prof"}`}
+                style={{ left: `${Math.min(100, (c.t_seconds / duration) * 100)}%` }}
+                aria-label={`Nota en ${formatStamp(c.t_seconds)}`}
+                aria-pressed={selected === c.id}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  pick(c);
+                }}
+              />
+            ))}
+        </div>
+        <div className="meta">
+          <span>{formatStamp(now)}</span>
+          <span className="speed">{status}</span>
+          <span>{formatStamp(duration)}</span>
+        </div>
       </div>
 
+      {/* Controles */}
       <div className="flex flex-wrap items-center gap-2">
-        <span className="mr-1 text-small text-paper-dim">Velocidad</span>
+        <button type="button" onClick={togglePlay} className="btn !min-h-9">
+          {playing ? "Pausa" : "Reproducir"}
+        </button>
+        <span className="ml-2 text-small text-paper-dim">Velocidad</span>
         {SPEEDS.map((s) => (
-          <button
-            key={s}
-            type="button"
-            onClick={() => setSpeed(s)}
-            aria-pressed={speed === s}
-            className="chip"
-          >
+          <button key={s} type="button" onClick={() => setSpeed(s)} aria-pressed={speed === s} className="chip">
             {s === 1 ? "1×" : `${s}×`}
           </button>
         ))}
       </div>
-
       <div className="flex flex-wrap items-center gap-2">
         <span className="mr-1 text-small text-paper-dim">Bucle</span>
         <button type="button" onClick={markA} aria-pressed={a != null} className="chip">
-          {a != null ? `Inicio ${fmt(a)}` : "Marcar inicio"}
+          {a != null ? `Inicio ${formatStamp(a)}` : "Marcar inicio"}
         </button>
         <button type="button" onClick={markB} aria-pressed={b != null} className="chip">
-          {b != null ? `Fin ${fmt(b)}` : "Marcar fin"}
+          {b != null ? `Fin ${formatStamp(b)}` : "Marcar fin"}
         </button>
         {(a != null || b != null) && (
-          <button type="button" onClick={clearLoop} className="chip">
+          <button type="button" onClick={() => { setA(null); setB(null); }} className="chip">
             Quitar
           </button>
         )}
       </div>
 
-      {loopOn && (
-        <div className="flex flex-wrap items-center gap-2 text-small">
-          <span className="mr-1 text-paper-dim">Ajustar</span>
-          <span className="stamp stamp-prof">inicio</span>
-          <button type="button" onClick={() => nudge("a", -0.5)} className="chip">−0,5 s</button>
-          <button type="button" onClick={() => nudge("a", 0.5)} className="chip">+0,5 s</button>
-          <span className="stamp stamp-prof">fin</span>
-          <button type="button" onClick={() => nudge("b", -0.5)} className="chip">−0,5 s</button>
-          <button type="button" onClick={() => nudge("b", 0.5)} className="chip">+0,5 s</button>
-          <span className="text-mini text-paper-dim">
-            {fmt(a)} → {fmt(b)} · ahora {fmt(now)}
-          </span>
+      {/* Notas */}
+      <div className="card">
+        <div className="flex flex-wrap items-center gap-1.5 px-4 pt-3 pb-1">
+          <button type="button" className="chip" aria-pressed={!onlyProfes} onClick={() => setOnlyProfes(false)}>
+            Todas las notas
+          </button>
+          <button type="button" className="chip" aria-pressed={onlyProfes} onClick={() => setOnlyProfes(true)}>
+            Solo profes
+          </button>
         </div>
-      )}
+
+        <div className="px-4">
+          {profeNote && (
+            <div className="note cursor-default">
+              <span className="stamp stamp-prof">nota</span>
+              <div>
+                <p className="who">Nota general del profe</p>
+                <p className="said">{profeNote}</p>
+              </div>
+            </div>
+          )}
+          {visible.length === 0 && !profeNote && (
+            <p className="py-3 text-small text-paper-dim">Todavía no hay notas. Pausa donde quieras y escribe una.</p>
+          )}
+          {visible.map((c) => {
+            const alum = c.author_role === "alumno";
+            const canDelete = viewer && (viewer.id === c.author_id || viewer.isAdmin);
+            return (
+              <button
+                key={c.id}
+                type="button"
+                className={`note ${selected && selected !== c.id ? "dim" : ""}`}
+                onClick={() => pick(c)}
+              >
+                <span className={`stamp ${alum ? "stamp-alum" : "stamp-prof"}`}>{formatStamp(c.t_seconds)}</span>
+                <div className="min-w-0 flex-1">
+                  <p className="who">
+                    {c.author_name}, {ROLE_LABEL[c.author_role]}
+                  </p>
+                  <p className="said">{c.body}</p>
+                </div>
+                {canDelete && (
+                  <span
+                    role="button"
+                    aria-label="Borrar nota"
+                    className="text-mini text-paper-dim hover:text-rosa"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      remove(c);
+                    }}
+                  >
+                    ×
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Composer */}
+        {viewer ? (
+          <form onSubmit={submitNote} className="flex items-center gap-2 border-t border-ink-3 px-4 py-3">
+            <button
+              type="button"
+              className="stamp bg-ink-3 text-paper-dim"
+              onClick={() => setDraftAt(now)}
+              title="Fijar la nota en el momento actual"
+            >
+              en {formatStamp(draftAt ?? now)}
+            </button>
+            <input
+              value={draft}
+              onChange={(e) => {
+                if (draftAt == null) setDraftAt(now);
+                setDraft(e.target.value);
+              }}
+              placeholder="Escribe una nota"
+              className="field !min-h-10 flex-1"
+              disabled={pending}
+            />
+            <button type="submit" className="btn btn-primary !min-h-10" disabled={pending || !draft.trim()}>
+              Añadir
+            </button>
+          </form>
+        ) : (
+          <p className="border-t border-ink-3 px-4 py-3 text-small text-paper-dim">
+            <Link href="/login">Entra</Link> para dejar una nota en un momento del vídeo.
+          </p>
+        )}
+        {error && <p className="notice notice-rosa mx-4 mb-3">{error}</p>}
+      </div>
     </div>
   );
 }

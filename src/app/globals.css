@@ -237,6 +237,41 @@
   }
   .av-p { background: rgb(230 180 76 / 0.18); color: var(--color-brass); }
 
+  /* Escenario del reproductor: barra con marcas de notas (maqueta "phone > stage"). */
+  .stage { position: relative; background: var(--color-stage); border-radius: var(--radius-card); overflow: hidden; }
+  .glyph {
+    position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+    width: 56px; height: 56px; border-radius: 50%;
+    border: 1px solid rgb(243 238 231 / 0.35); background: rgb(12 9 16 / 0.35);
+    display: flex; align-items: center; justify-content: center; pointer-events: none;
+  }
+  .glyph::after {
+    content: ""; margin-left: 4px;
+    border-left: 14px solid rgb(243 238 231 / 0.85);
+    border-top: 9px solid transparent; border-bottom: 9px solid transparent;
+  }
+  .bar { position: absolute; left: 14px; right: 14px; bottom: 34px; height: 3px; background: rgb(243 238 231 / 0.22); border-radius: 2px; cursor: pointer; }
+  .bar::before { content: ""; position: absolute; left: 0; right: 0; top: -14px; bottom: -14px; } /* área de toque */
+  .played { position: absolute; left: 0; top: 0; height: 3px; background: var(--color-paper); border-radius: 2px; }
+  .pin {
+    position: absolute; top: -5px; width: 13px; height: 13px; border-radius: 50%; border: 0; padding: 0;
+    cursor: pointer; transform: translateX(-50%) scale(1); transition: transform 0.18s ease;
+  }
+  .pin::before { content: ""; position: absolute; inset: -12px; } /* área de toque 37px */
+  .pin:hover, .pin[aria-pressed="true"] { transform: translateX(-50%) scale(1.45); }
+  .pin-prof { background: var(--color-brass); }
+  .pin-alum { background: var(--color-rosa); }
+  .meta { position: absolute; left: 14px; right: 14px; bottom: 12px; display: flex; justify-content: space-between; font-size: var(--text-mini); color: rgb(243 238 231 / 0.75); pointer-events: none; }
+  .meta .speed { color: rgb(243 238 231 / 0.5); }
+  .stage-shade { position: absolute; left: 0; right: 0; bottom: 0; height: 90px; background: linear-gradient(transparent, rgb(12 9 16 / 0.75)); pointer-events: none; }
+
+  /* Lista de notas ancladas. */
+  .note { display: flex; gap: 10px; padding: 12px 0; border-top: 1px solid var(--color-ink-3); transition: opacity 0.2s; cursor: pointer; text-align: left; width: 100%; background: none; border-left: 0; border-right: 0; border-bottom: 0; color: inherit; }
+  .note:first-child { border-top: 0; }
+  .note.dim { opacity: 0.34; }
+  .who { font-size: var(--text-mini); color: var(--color-paper-dim); margin: 0 0 2px; }
+  .said { font-size: var(--text-small); line-height: 1.5; margin: 0; white-space: pre-line; }
+
   /* Marca. */
   .mark { font-family: var(--font-disp); font-weight: 700; font-size: 20px; letter-spacing: -0.02em; color: var(--color-paper); text-decoration: none; }
   .mark em { font-style: normal; color: var(--color-brass); }

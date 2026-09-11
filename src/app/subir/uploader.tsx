@@ -2,17 +2,23 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { readVideoMeta, captureThumbnail, putWithProgress, lastThursday } from "@/lib/video-meta";
+import { readVideoMeta, captureThumbnail, putWithProgress, lastWeekday } from "@/lib/video-meta";
 import { probeMp4, isHevc, isH264, type Mp4Info } from "@/lib/mp4-probe";
 
 type Phase = "idle" | "preparando" | "subiendo" | "guardando" | "hecho";
+type CourseOpt = { id: string; name: string; weekday: number | null };
 
-export function Uploader() {
+export function Uploader({ courses, detectedId }: { courses: CourseOpt[]; detectedId: string | null }) {
   const router = useRouter();
+  const initialId = detectedId ?? courses[0]?.id ?? "";
+  const [courseId, setCourseId] = useState<string>(initialId);
+  const course = courses.find((c) => c.id === courseId) ?? null;
   const [file, setFile] = useState<File | null>(null);
   const [probe, setProbe] = useState<Mp4Info | null>(null);
   const [title, setTitle] = useState("");
-  const [classDate, setClassDate] = useState(lastThursday());
+  const [classDate, setClassDate] = useState(() =>
+    lastWeekday(courses.find((c) => c.id === initialId)?.weekday ?? null),
+  );
   const [notes, setNotes] = useState("");
   const [phase, setPhase] = useState<Phase>("idle");
   const [progress, setProgress] = useState(0);
@@ -65,14 +71,12 @@ export function Uploader() {
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-    if (!file) return;
+    if (!file || !courseId) return;
     setError(null);
     setProgress(0);
 
     try {
       setPhase("preparando");
-      // Preferir los metadatos del contenedor: no dependen de que el navegador
-      // tenga el códec. El <video> solo hace falta para la miniatura.
       let duration = probe?.duration ?? NaN;
       let width = probe?.width ?? 0;
       let height = probe?.height ?? 0;
@@ -119,17 +123,19 @@ export function Uploader() {
           r2_key: videoKey,
           thumb_key: thumb ? thumbKey : null,
           title: title.trim() || file.name,
-          class_date: classDate,
+          course_id: courseId,
+          date: classDate,
           notes: notes.trim() || null,
           duration_s: Math.round(duration),
           width,
           height,
+          size_bytes: file.size,
         }),
       });
       if (!save.ok) throw new Error((await save.json()).error ?? "No se pudo guardar el vídeo");
 
       setPhase("hecho");
-      router.push("/");
+      router.push(`/c/${courseId}`);
       router.refresh();
     } catch (err) {
       setPhase("idle");
@@ -138,10 +144,38 @@ export function Uploader() {
   }
 
   const busy = phase !== "idle" && phase !== "hecho";
-  const inputClass = "field";
 
   return (
     <form onSubmit={submit} className="flex w-full flex-col gap-4">
+      <div>
+        <h1 className="text-display">Subir a {course?.name ?? "…"}</h1>
+        <p className="mt-1 text-small text-paper-dim">
+          {courseId === detectedId ? "Detectado por el horario de hoy" : "Elige el curso y la fecha de la clase"}
+        </p>
+      </div>
+
+      {courses.length > 1 && (
+        <label className="flex flex-col gap-1 text-small text-paper-dim">
+          Curso
+          <select
+            value={courseId}
+            disabled={busy}
+            onChange={(e) => {
+              setCourseId(e.target.value);
+              const c = courses.find((x) => x.id === e.target.value);
+              setClassDate(lastWeekday(c?.weekday ?? null));
+            }}
+            className="field"
+          >
+            {courses.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
+
       <label className="flex flex-col gap-1 text-small text-paper-dim">
         Vídeo (MP4)
         <input
@@ -149,13 +183,13 @@ export function Uploader() {
           accept="video/mp4"
           disabled={busy}
           onChange={(e) => onPick(e.target.files?.[0] ?? null)}
-          className={inputClass}
+          className="field"
         />
       </label>
 
       {file && probe && (
         <p className="text-mini text-paper-dim">
-          {isH264(probe.videoCodec) ? "H.264" : probe.videoCodec ?? "códec desconocido"}
+          {isH264(probe.videoCodec) ? "H.264" : (probe.videoCodec ?? "códec desconocido")}
           {probe.width && probe.height ? ` · ${probe.width}×${probe.height}` : ""}
           {probe.duration != null ? ` · ${Math.round(probe.duration)} s` : ""}
           {` · ${(file.size / 1024 / 1024).toFixed(1)} MB`}
@@ -170,7 +204,7 @@ export function Uploader() {
           disabled={busy}
           required
           placeholder="Vuelta con peinada"
-          className={inputClass}
+          className="field"
         />
       </label>
 
@@ -182,19 +216,19 @@ export function Uploader() {
           onChange={(e) => setClassDate(e.target.value)}
           disabled={busy}
           required
-          className={inputClass}
+          className="field"
         />
       </label>
 
       <label className="flex flex-col gap-1 text-small text-paper-dim">
-        Nota para la clase (opcional)
+        Nota general (opcional)
         <textarea
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
           disabled={busy}
-          rows={3}
-          placeholder="Ojo al peso en el tercer tiempo"
-          className={inputClass}
+          rows={2}
+          placeholder="Las notas por momento se añaden después, viendo el vídeo"
+          className="field"
         />
       </label>
 
@@ -215,14 +249,11 @@ export function Uploader() {
               }}
             />
           </div>
+          <span className="text-mini text-paper-dim">No cierres la pestaña hasta que termine.</span>
         </div>
       )}
 
-      <button
-        type="submit"
-        disabled={!file || busy}
-        className="btn btn-primary"
-      >
+      <button type="submit" disabled={!file || busy} className="btn btn-primary">
         {busy ? "Subiendo…" : "Subir vídeo"}
       </button>
     </form>

@@ -76,14 +76,20 @@ Clases CSS en `src/app/globals.css`, capa `components`. Se combinan con utilidad
 | `.row` + `.thumb` | Fila de lista de 81 px con miniatura 86×57 | Caben ocho clases en pantalla sin desplazar. `<i>` dentro de `.thumb` para la duración |
 | `.av` | Avatar de iniciales | `.av-p` en brass para profe y admin |
 | `.mark` | Marca "Compás" | `Comp<em>á</em>s`, la tilde en brass |
+| `.stage` | Escenario del reproductor | Fondo stage, radio card. Dentro: `.glyph` (play centrado), `.bar` con `.played` y `.pin`, `.meta` (tiempo, estado, duración), `.stage-shade` |
+| `.pin` | Marca de nota en la barra | `.pin-prof` brass, `.pin-alum` rosa. `aria-pressed="true"` la agranda. Área de toque de 37 px aunque mida 13 |
+| `.note` | Nota anclada en la lista | `.stamp` con el tiempo, `.who` (quién y rol), `.said` (texto). `.dim` atenúa las no seleccionadas |
 
-## Pantallas
+## Jerarquía y pantallas
 
-- **Lista** (`/`): agrupada por fecha de clase, porque la alumna busca un día, no un archivo. Fecha en `text-lede`, filas `.row` dentro de una `.card`.
-- **Reproductor** (`/v/[id]`): escenario `bg-stage` con `rounded-card`. Debajo, chips de velocidad y de bucle. La nota del profe va en una `.card` con `.stamp-prof`.
-- **Subir** (`/subir`): un `.card` con campos `.field`, progreso `.prog`, errores `.notice-rosa`, avisos `.notice-brass`, y un solo `.btn-primary`.
-- **Personas** (`/admin`): cifras en `text-display` sobre `bg-ink-2`, filas con `.av` y `.tag`.
-- **Entrar** (`/login`): un `.card` centrado con un `.btn-primary`.
+Escuela → Curso (Salsa intermedio) → Sesión (14 nov) → Vídeo → Nota (tiempo, autor, rol).
+
+- **Cursos** (`/`): una `.card` por curso con nombre en `text-lede`, horario y recuento de sesiones y vídeos.
+- **Curso** (`/c/[id]`): sesiones agrupadas por fecha en `text-lede`, porque la alumna busca un día, no un archivo. Vídeos como filas `.row` dentro de una `.card`, con `.badge` "N notas".
+- **Vídeo** (`/v/[id]`): `.stage` con la barra de posición y un `.pin` por nota. Debajo, chips de velocidad y bucle. Luego una `.card` con los filtros ("Todas las notas" / "Solo profes"), la lista de `.note` y el compositor: `.stamp` con "en 1:15", un `.field` y un `.btn-primary`. Tocar una nota o su pin salta a ese segundo y atenúa el resto. Sin sesión, el compositor es un enlace a entrar.
+- **Subir** (`/subir`): "Subir a <curso>", con el curso detectado por el día de la semana y la fecha de la última clase ya puesta. Campos `.field`, progreso `.prog`, errores `.notice-rosa`, avisos `.notice-brass`, un solo `.btn-primary`. La sesión se crea sola.
+- **Administración** (`/admin`): nombre de la escuela editable, tres cifras en `text-display` (almacenamiento, alumnos, clases sin vídeo esta semana, esta última en brass si hay alguna), cursos con alta de nuevos, y personas con `.av`, `.tag` y rol editable.
+- **Entrar** (`/login`): una `.card` centrada con un `.btn-primary`.
 
 ## Cómo añadir algo nuevo
 

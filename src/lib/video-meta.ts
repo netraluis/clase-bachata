@@ -73,9 +73,10 @@ export function putWithProgress(
   });
 }
 
-// Último jueves (incluido hoy si es jueves): la clase es los jueves.
-export function lastThursday(from = new Date()): string {
+// Última ocurrencia de un día de la semana (incluido hoy). Sin día: hoy.
+export function lastWeekday(weekday: number | null, from = new Date()): string {
   const d = new Date(from);
-  while (d.getDay() !== 4) d.setDate(d.getDate() - 1);
-  return d.toISOString().slice(0, 10);
+  if (weekday != null) while (d.getDay() !== weekday) d.setDate(d.getDate() - 1);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }

@@ -1,9 +1,10 @@
 import Link from "next/link";
 import { getSessionUser } from "@/lib/auth";
+import { getSchool } from "@/lib/data";
 
 // Cabecera común: marca + estado de sesión. Server Component.
 export async function Header() {
-  const user = await getSessionUser();
+  const [user, school] = await Promise.all([getSessionUser(), getSchool()]);
 
   return (
     <header className="border-b border-line">
@@ -11,7 +12,7 @@ export async function Header() {
         <Link href="/" className="mark">
           Comp<em>á</em>s
         </Link>
-        <span className="text-mini text-paper-dim">Clase de bachata</span>
+        <span className="text-mini text-paper-dim">{school?.name ?? "Clase de bachata"}</span>
 
         <nav className="ml-auto flex flex-wrap items-center gap-3 text-small">
           {!user && (
