@@ -2,14 +2,22 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState, useTransition } from "react";
+import { Pause, Play, Repeat, X } from "lucide-react";
 import type { Comment } from "@/lib/data";
 import { formatStamp } from "@/lib/format";
 import type { Role } from "@/lib/auth";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
+import { Textarea } from "@/components/ui/textarea";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { addComment, deleteComment } from "./actions";
 
-const SPEEDS = [0.5, 0.75, 1] as const;
+const SPEEDS = ["0.5", "0.75", "1"] as const;
 type Viewer = { id: string; role: Role; isAdmin: boolean; canWrite: boolean } | null;
-const ROLE_LABEL: Record<Role, string> = { admin: "admin", profe: "profe", alumno: "alumno" };
+const MIN_GAP = 0.5;
 
 export function Player({
   videoId,
@@ -31,23 +39,22 @@ export function Player({
   viewer: Viewer;
 }) {
   const ref = useRef<HTMLVideoElement>(null);
-  const textRef = useRef<HTMLTextAreaElement>(null);
+  const barRef = useRef<HTMLDivElement>(null);
+  const dragging = useRef<"a" | "b" | null>(null);
   const [playing, setPlaying] = useState(false);
   const [now, setNow] = useState(0);
   const [duration, setDuration] = useState(durationProp);
-  const [speed, setSpeed] = useState<number>(1);
+  const [speed, setSpeed] = useState<string>("1");
+  const [loopMode, setLoopMode] = useState(false);
   const [a, setA] = useState<number | null>(null);
   const [b, setB] = useState<number | null>(null);
-  const barRef = useRef<HTMLDivElement>(null);
-  const dragging = useRef<"a" | "b" | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
-  const [hovered, setHovered] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, start] = useTransition();
 
   useEffect(() => {
-    if (ref.current) ref.current.playbackRate = speed;
+    if (ref.current) ref.current.playbackRate = Number(speed);
   }, [speed]);
 
   // Bucle A-B con requestAnimationFrame: timeupdate solo dispara ~4 veces/s.
@@ -64,6 +71,16 @@ export function Player({
   }, [a, b]);
 
   const loopOn = a != null && b != null && b > a;
+  const step: "setA" | "setB" | "ready" = a == null ? "setA" : b == null ? "setB" : "ready";
+
+  useEffect(() => {
+    if (!loopMode) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") exitLoopMode();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [loopMode]);
 
   function seek(t: number) {
     const video = ref.current;
@@ -71,9 +88,7 @@ export function Player({
     video.currentTime = Math.max(0, Math.min(t, duration || t));
     setNow(video.currentTime);
   }
-  function pause() {
-    ref.current?.pause();
-  }
+  const pause = () => ref.current?.pause();
   function togglePlay() {
     const video = ref.current;
     if (!video) return;
@@ -82,35 +97,61 @@ export function Player({
   }
   function onBarClick(e: React.MouseEvent<HTMLDivElement>) {
     const rect = e.currentTarget.getBoundingClientRect();
-    seek(((e.clientX - rect.left) / rect.width) * duration);
+    const t = ((e.clientX - rect.left) / rect.width) * duration;
+    if (loopMode) markAt(t);
+    else seek(t);
   }
-  // Tocar una marca o una nota: pausa y salta a ese momento (Frame.io).
+  // Modo repetir (VLC + Moises): el primer toque marca el inicio, el segundo el
+  // fin y empieza a repetir. Con los dos puestos, un toque mueve el extremo más
+  // cercano. Los extremos también se arrastran (Anytune).
+  function markAt(t: number) {
+    if (a == null || (b == null && t <= a + MIN_GAP)) {
+      setA(t);
+      setB(null);
+      seek(t);
+      return;
+    }
+    if (b == null) {
+      setB(t);
+      seek(a);
+      void ref.current?.play();
+      return;
+    }
+    if (Math.abs(t - a) <= Math.abs(t - b)) setA(Math.min(t, b - MIN_GAP));
+    else setB(Math.max(t, a + MIN_GAP));
+  }
+  function markHere() {
+    markAt(ref.current?.currentTime ?? now);
+  }
+  function enterLoopMode() {
+    setLoopMode(true);
+    setA(null);
+    setB(null);
+    setSelected(null);
+  }
+  function exitLoopMode() {
+    setLoopMode(false);
+    setA(null);
+    setB(null);
+  }
+  function resetLoop() {
+    setA(null);
+    setB(null);
+    pause();
+  }
+  // Tocar una marca o una nota: pausa y salta a ese momento.
   function pick(c: Comment) {
     pause();
     setSelected(c.id === selected ? null : c.id);
     seek(c.t_seconds);
   }
-  // Repetir un trozo: al activarlo, un tramo de 6 s desde el punto actual.
-  // Los extremos se arrastran en la barra o se ajustan con ±1 s.
-  const MIN_GAP = 0.5;
-  function startLoop() {
-    const from = Math.max(0, Math.min(now, Math.max(0, duration - MIN_GAP)));
-    const to = Math.min(duration || from + 6, from + 6);
-    setA(from);
-    setB(to);
-    seek(from);
-    void ref.current?.play();
-  }
-  function stopLoop() {
-    setA(null);
-    setB(null);
-  }
+
   function nudge(which: "a" | "b", delta: number) {
     if (a == null || b == null) return;
     if (which === "a") setA(Math.max(0, Math.min(a + delta, b - MIN_GAP)));
     else setB(Math.max(a + MIN_GAP, Math.min(b + delta, duration)));
   }
-  function fracFromEvent(e: React.PointerEvent | PointerEvent): number {
+  function fracFromEvent(e: React.PointerEvent): number {
     const rect = barRef.current?.getBoundingClientRect();
     if (!rect) return 0;
     return Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
@@ -142,11 +183,8 @@ export function Player({
     void ref.current?.play();
   }
 
-  // Escribir una nota: el vídeo se pausa al enfocar el campo, y el tiempo de
-  // la nota es siempre el del cabezal. Si mueves el vídeo, la nota se mueve.
-  function onDraftFocus() {
-    pause();
-  }
+  // Escribir una nota: el vídeo se pausa al enfocar el campo y el tiempo de la
+  // nota es siempre el del cabezal. Si mueves el vídeo, la nota se mueve.
   function submitNote(e: React.FormEvent) {
     e.preventDefault();
     const t = ref.current?.currentTime ?? now;
@@ -158,9 +196,6 @@ export function Player({
       else setDraft("");
     });
   }
-  function cancelDraft() {
-    setDraft("");
-  }
   function remove(c: Comment) {
     start(async () => {
       const res = await deleteComment(videoId, c.id);
@@ -170,19 +205,19 @@ export function Player({
 
   const played = duration ? Math.min(100, (now / duration) * 100) : 0;
   const status = [
-    speed !== 1 ? `${speed}×` : null,
+    speed !== "1" ? `${speed}×` : null,
+    loopMode && step === "setA" ? "toca la barra donde empieza" : null,
+    loopMode && step === "setB" && a != null ? `inicio ${formatStamp(a)} · toca donde termina` : null,
     loopOn ? `repitiendo ${formatStamp(a)}–${formatStamp(b)}` : null,
   ]
     .filter(Boolean)
     .join(", ");
-  const bubbleFor = hovered ?? selected;
-  const bubble = bubbleFor ? comments.find((c) => c.id === bubbleFor) ?? null : null;
   const pct = (t: number) => Math.min(100, (t / duration) * 100);
 
   return (
     <div className="flex flex-col gap-4">
       {/* Escenario */}
-      <div className="stage">
+      <div className="relative overflow-hidden rounded-xl bg-black">
         <div className={vertical ? "mx-auto w-full max-w-sm" : "w-full"}>
           <video
             ref={ref}
@@ -194,228 +229,215 @@ export function Player({
             onPause={() => setPlaying(false)}
             onTimeUpdate={(e) => setNow(e.currentTarget.currentTime)}
             onLoadedMetadata={(e) => setDuration(e.currentTarget.duration || durationProp)}
-            className="mx-auto block max-h-[70vh] w-full cursor-pointer bg-stage object-contain"
+            className="mx-auto block max-h-[70vh] w-full cursor-pointer bg-black object-contain"
             style={{ aspectRatio: ratio }}
           />
         </div>
-        {!playing && <div className="glyph" aria-hidden="true" />}
+        {!playing && (
+          <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+            <div className="flex size-14 items-center justify-center rounded-full bg-black/40 text-white ring-1 ring-white/40">
+              <Play className="size-6" />
+            </div>
+          </div>
+        )}
         <div className="stage-shade" />
 
-        <div
-          ref={barRef}
-          className="bar"
-          onClick={onBarClick}
-          role="slider"
-          aria-label="Posición"
-          aria-valuemin={0}
-          aria-valuemax={duration}
-          aria-valuenow={now}
-        >
-          <div className="played" style={{ width: `${played}%` }} />
-          {loopOn && duration > 0 && (
+        <div ref={barRef} className="timeline" onClick={onBarClick} role="slider" aria-label="Posición" aria-valuemin={0} aria-valuemax={duration} aria-valuenow={now}>
+          <div className="timeline-played" style={{ width: `${played}%` }} />
+          {loopMode && a != null && duration > 0 && (
             <>
-              <div className="range" style={{ left: `${pct(a)}%`, width: `${pct(b) - pct(a)}%` }} />
-              <button
-                type="button"
-                className="handle"
-                style={{ left: `${pct(a)}%` }}
-                aria-label={`Inicio del trozo, ${formatStamp(a)}`}
-                onPointerDown={(e) => onHandleDown("a", e)}
-                onPointerMove={onHandleMove}
-                onPointerUp={onHandleUp}
-                onClick={(e) => e.stopPropagation()}
-              />
-              <button
-                type="button"
-                className="handle"
-                style={{ left: `${pct(b)}%` }}
-                aria-label={`Fin del trozo, ${formatStamp(b)}`}
-                onPointerDown={(e) => onHandleDown("b", e)}
-                onPointerMove={onHandleMove}
-                onPointerUp={onHandleUp}
-                onClick={(e) => e.stopPropagation()}
-              />
+              {b != null && <div className="timeline-range" style={{ left: `${pct(a)}%`, width: `${pct(b) - pct(a)}%` }} />}
+              <button type="button" className="timeline-handle" style={{ left: `${pct(a)}%` }} aria-label={`Inicio del trozo, ${formatStamp(a)}`} onPointerDown={(e) => onHandleDown("a", e)} onPointerMove={onHandleMove} onPointerUp={onHandleUp} onClick={(e) => e.stopPropagation()} />
+              {b != null && (
+                <button type="button" className="timeline-handle" style={{ left: `${pct(b)}%` }} aria-label={`Fin del trozo, ${formatStamp(b)}`} onPointerDown={(e) => onHandleDown("b", e)} onPointerMove={onHandleMove} onPointerUp={onHandleUp} onClick={(e) => e.stopPropagation()} />
+              )}
             </>
           )}
           {duration > 0 &&
+            !loopMode &&
             comments.map((c) => (
-              <button
-                key={c.id}
-                type="button"
-                className="pin pin-prof"
-                style={{ left: `${pct(c.t_seconds)}%` }}
-                aria-label={`Nota en ${formatStamp(c.t_seconds)}: ${c.body}`}
-                aria-pressed={selected === c.id}
-                onMouseEnter={() => setHovered(c.id)}
-                onMouseLeave={() => setHovered(null)}
-                onFocus={() => setHovered(c.id)}
-                onBlur={() => setHovered(null)}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  pick(c);
-                }}
-              />
+              <Tooltip key={c.id}>
+                <TooltipTrigger
+                  render={
+                    <button
+                      type="button"
+                      className="timeline-pin"
+                      style={{ left: `${pct(c.t_seconds)}%` }}
+                      aria-label={`Nota en ${formatStamp(c.t_seconds)}`}
+                      aria-pressed={selected === c.id}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        pick(c);
+                      }}
+                    />
+                  }
+                />
+                <TooltipContent side="top" className="max-w-xs">
+                  <p className="text-xs opacity-80">
+                    {formatStamp(c.t_seconds)} · {c.author_name}
+                  </p>
+                  <p>{c.body}</p>
+                </TooltipContent>
+              </Tooltip>
             ))}
-          {bubble && duration > 0 && (
-            <div className="bubble" style={{ left: `clamp(120px, ${pct(bubble.t_seconds)}%, calc(100% - 120px))` }}>
-              <p className="who">
-                <span className="stamp stamp-prof mr-1">{formatStamp(bubble.t_seconds)}</span>
-                {bubble.author_name}
-              </p>
-              <p className="said line-clamp-4">{bubble.body}</p>
-            </div>
-          )}
         </div>
-        <div className="meta">
+        <div className="timeline-meta">
           <span>{formatStamp(now)}</span>
-          <span className="speed">{status}</span>
+          <span>{status}</span>
           <span>{formatStamp(duration)}</span>
         </div>
       </div>
 
       {/* Controles */}
-      <div className="flex flex-wrap items-center gap-2">
-        <button type="button" onClick={togglePlay} className="btn !min-h-9">
+      <div className="flex flex-wrap items-center gap-3">
+        <Button variant="outline" onClick={togglePlay}>
+          {playing ? <Pause data-icon="inline-start" /> : <Play data-icon="inline-start" />}
           {playing ? "Pausa" : "Reproducir"}
-        </button>
-        <span className="ml-2 text-small text-paper-dim">Velocidad</span>
-        {SPEEDS.map((s) => (
-          <button key={s} type="button" onClick={() => setSpeed(s)} aria-pressed={speed === s} className="chip">
-            {s === 1 ? "1×" : `${s}×`}
-          </button>
-        ))}
-      </div>
-      <div className="flex flex-col gap-2">
-        <div className="flex flex-wrap items-center gap-2">
-          {!loopOn ? (
-            <>
-              <button type="button" onClick={startLoop} className="chip" disabled={!duration}>
-                Repetir un trozo
-              </button>
-              <span className="text-mini text-paper-dim">
-                Repite un paso una y otra vez, desde donde esté el vídeo.
-              </span>
-            </>
-          ) : (
-            <>
-              <button type="button" onClick={stopLoop} className="chip" aria-pressed="true">
-                Repitiendo {formatStamp(a)}–{formatStamp(b)} · parar
-              </button>
-              <span className="text-mini text-paper-dim">Arrastra los extremos dorados de la barra para ajustar el trozo.</span>
-            </>
-          )}
+        </Button>
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-muted-foreground">Velocidad</span>
+          <ToggleGroup variant="outline" value={[speed]} onValueChange={(v) => v[0] && setSpeed(String(v[0]))}>
+            {SPEEDS.map((s) => (
+              <ToggleGroupItem key={s} value={s} aria-label={`${s}×`}>
+                {s}×
+              </ToggleGroupItem>
+            ))}
+          </ToggleGroup>
         </div>
-        {loopOn && (
-          <div className="flex flex-wrap items-center gap-2 text-small">
-            <span className="text-paper-dim">Inicio</span>
-            <button type="button" onClick={() => nudge("a", -1)} className="chip">−1 s</button>
-            <button type="button" onClick={() => nudge("a", 1)} className="chip">+1 s</button>
-            <span className="ml-2 text-paper-dim">Fin</span>
-            <button type="button" onClick={() => nudge("b", -1)} className="chip">−1 s</button>
-            <button type="button" onClick={() => nudge("b", 1)} className="chip">+1 s</button>
-          </div>
-        )}
       </div>
+
+      {!loopMode ? (
+        <div className="flex flex-wrap items-center gap-3">
+          <Button variant="outline" onClick={enterLoopMode} disabled={!duration}>
+            <Repeat data-icon="inline-start" />
+            Repetir un trozo
+          </Button>
+          <span className="text-sm text-muted-foreground">Para ensayar un paso una y otra vez.</span>
+        </div>
+      ) : (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Repeat className="size-4" />
+              Modo repetir
+            </CardTitle>
+            <CardDescription>
+              {step === "setA" && "Toca en la barra del vídeo donde empieza el trozo, o pulsa el botón cuando el vídeo llegue ahí."}
+              {step === "setB" && a != null && `Inicio en ${formatStamp(a)}. Ahora toca donde termina, o pulsa el botón cuando llegue.`}
+              {step === "ready" && a != null && b != null && `Repitiendo de ${formatStamp(a)} a ${formatStamp(b)}. Arrastra los extremos verdes de la barra o ajusta con los botones.`}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-wrap items-center gap-2">
+            {step === "setA" && <Button onClick={markHere}>Empieza aquí ({formatStamp(now)})</Button>}
+            {step === "setB" && <Button onClick={markHere}>Termina aquí ({formatStamp(now)})</Button>}
+            {step === "ready" && (
+              <>
+                <span className="text-sm text-muted-foreground">Inicio</span>
+                <Button variant="outline" size="sm" onClick={() => nudge("a", -1)}>−1 s</Button>
+                <Button variant="outline" size="sm" onClick={() => nudge("a", 1)}>+1 s</Button>
+                <span className="ml-2 text-sm text-muted-foreground">Fin</span>
+                <Button variant="outline" size="sm" onClick={() => nudge("b", -1)}>−1 s</Button>
+                <Button variant="outline" size="sm" onClick={() => nudge("b", 1)}>+1 s</Button>
+                <Button variant="outline" size="sm" className="ml-2" onClick={resetLoop}>Elegir otro trozo</Button>
+              </>
+            )}
+          </CardContent>
+          <CardFooter className="border-t">
+            <Button variant="destructive" onClick={exitLoopMode}>
+              <X data-icon="inline-start" />
+              Salir del modo repetir
+            </Button>
+            <span className="ml-3 text-xs text-muted-foreground">También con Esc.</span>
+          </CardFooter>
+        </Card>
+      )}
 
       {/* Notas */}
-      <div className="card">
-        <div className="flex items-center justify-between px-4 pt-4 pb-1">
-          <h2 className="text-lede">Notas del profe</h2>
-          <span className="text-mini text-paper-dim">{comments.length === 1 ? "1 nota" : `${comments.length} notas`}</span>
-        </div>
-
-        <div className="px-4">
+      <Card>
+        <CardHeader>
+          <CardTitle>Notas del profe</CardTitle>
+          <CardDescription>{comments.length === 1 ? "1 nota" : `${comments.length} notas`}</CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-col divide-y">
           {profeNote && (
-            <div className="note cursor-default">
-              <span className="stamp stamp-prof">general</span>
-              <div>
-                <p className="said">{profeNote}</p>
-              </div>
+            <div className="flex gap-3 py-3">
+              <Badge variant="secondary">general</Badge>
+              <p className="text-sm whitespace-pre-line">{profeNote}</p>
             </div>
           )}
           {comments.length === 0 && !profeNote && (
-            <p className="py-3 text-small text-paper-dim">
-              {viewer?.canWrite
-                ? "Todavía no hay notas. Pausa el vídeo donde quieras y escribe abajo."
-                : "Todavía no hay notas del profe en este vídeo."}
+            <p className="py-2 text-sm text-muted-foreground">
+              {viewer?.canWrite ? "Todavía no hay notas. Pausa el vídeo donde quieras y escribe abajo." : "Todavía no hay notas del profe en este vídeo."}
             </p>
           )}
           {comments.map((c) => {
             const canDelete = viewer && (viewer.id === c.author_id || viewer.isAdmin);
+            const dim = selected && selected !== c.id;
             return (
-              <button
-                key={c.id}
-                type="button"
-                className={`note ${selected && selected !== c.id ? "dim" : ""}`}
-                onClick={() => pick(c)}
-              >
-                <span className="stamp stamp-prof">{formatStamp(c.t_seconds)}</span>
+              <div key={c.id} className={`flex items-start gap-3 py-3 transition-opacity ${dim ? "opacity-40" : ""}`}>
+                <Button variant="outline" size="sm" onClick={() => pick(c)} aria-pressed={selected === c.id}>
+                  {formatStamp(c.t_seconds)}
+                </Button>
                 <div className="min-w-0 flex-1">
-                  <p className="who">
-                    {c.author_name}, {ROLE_LABEL[c.author_role]}
+                  <p className="text-xs text-muted-foreground">
+                    {c.author_name}, {c.author_role}
                   </p>
-                  <p className="said">{c.body}</p>
+                  <p className="text-sm whitespace-pre-line">{c.body}</p>
                 </div>
                 {canDelete && (
-                  <span
-                    role="button"
-                    aria-label="Borrar nota"
-                    className="text-mini text-paper-dim hover:text-rosa"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      remove(c);
-                    }}
-                  >
-                    ×
-                  </span>
+                  <Button variant="ghost" size="icon" aria-label="Borrar nota" onClick={() => remove(c)} disabled={pending}>
+                    <X />
+                  </Button>
                 )}
-              </button>
+              </div>
             );
           })}
-        </div>
+        </CardContent>
 
-        {/* Compositor: solo profes y admin */}
         {viewer?.canWrite ? (
-          <form onSubmit={submitNote} className="flex flex-col gap-3 border-t border-ink-3 px-4 py-4">
-            <div className="flex items-end gap-4">
-              <div className="shrink-0">
-                <span className="block text-mini text-paper-dim">Nota en</span>
-                <span className="block font-disp text-display font-medium text-brass tabular-nums">{formatStamp(now)}</span>
+          <CardFooter className="border-t">
+            <form onSubmit={submitNote} className="flex w-full flex-col gap-3">
+              <div className="flex items-end gap-4">
+                <div className="shrink-0">
+                  <p className="text-xs text-muted-foreground">Nota en</p>
+                  <p className="font-heading text-3xl font-bold text-primary tabular-nums">{formatStamp(now)}</p>
+                </div>
+                <Textarea
+                  value={draft}
+                  onFocus={pause}
+                  onChange={(e) => setDraft(e.target.value)}
+                  placeholder="Escribe una nota"
+                  rows={2}
+                  className="flex-1"
+                  disabled={pending}
+                />
               </div>
-              <textarea
-                ref={textRef}
-                value={draft}
-                onFocus={onDraftFocus}
-                onChange={(e) => setDraft(e.target.value)}
-                placeholder="Escribe una nota"
-                rows={2}
-                className="field flex-1"
-                disabled={pending}
-              />
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <button type="submit" className="btn btn-primary !min-h-10" disabled={pending || !draft.trim()}>
-                Guardar en {formatStamp(now)}
-              </button>
-              {draft && (
-                <button type="button" onClick={cancelDraft} className="btn !min-h-10">
-                  Cancelar
-                </button>
+              <div className="flex flex-wrap items-center gap-2">
+                <Button type="submit" disabled={pending || !draft.trim()}>
+                  Guardar en {formatStamp(now)}
+                </Button>
+                {draft && (
+                  <Button type="button" variant="ghost" onClick={() => setDraft("")}>
+                    Cancelar
+                  </Button>
+                )}
+                <span className="text-xs text-muted-foreground">El vídeo se pausa mientras escribes. Muévelo para cambiar el momento de la nota.</span>
+              </div>
+              {error && (
+                <Alert variant="destructive">
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
               )}
-              <span className="text-mini text-paper-dim">
-                El vídeo se pausa mientras escribes. Muévelo para cambiar el momento de la nota.
-              </span>
-            </div>
-          </form>
+            </form>
+          </CardFooter>
         ) : (
           !viewer && (
-            <p className="border-t border-ink-3 px-4 py-3 text-mini text-paper-dim">
-              Las notas las escribe el profe. Si lo eres, <Link href="/login">entra</Link>.
-            </p>
+            <CardFooter className="border-t text-xs text-muted-foreground">
+              Las notas las escribe el profe. Si lo eres,&nbsp;<Link href="/login" className="underline">entra</Link>.
+            </CardFooter>
           )
         )}
-        {error && <p className="notice notice-rosa mx-4 mb-3">{error}</p>}
-      </div>
+      </Card>
     </div>
   );
 }

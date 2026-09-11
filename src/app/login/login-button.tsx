@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { Button } from "@/components/ui/button";
 
 export function LoginButton() {
   const [loading, setLoading] = useState(false);
@@ -16,8 +17,8 @@ export function LoginButton() {
   }
 
   return (
-    <button onClick={signIn} disabled={loading} className="btn btn-primary w-full">
+    <Button onClick={signIn} disabled={loading} className="w-full">
       {loading ? "Redirigiendo…" : "Entrar con Google"}
-    </button>
+    </Button>
   );
 }

@@ -1,47 +1,62 @@
 import Link from "next/link";
 import { getSessionUser } from "@/lib/auth";
 import { getSchool } from "@/lib/data";
+import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 
-// Cabecera común: marca + estado de sesión. Server Component.
+// Cabecera común: escuela, navegación y estado de sesión. Server Component.
 export async function Header() {
   const [user, school] = await Promise.all([getSessionUser(), getSchool()]);
 
   return (
-    <header className="border-b border-line">
-      <div className="mx-auto flex w-full max-w-3xl flex-wrap items-center gap-x-4 gap-y-2 px-4 py-4 sm:px-6">
-        <Link href="/" className="mark">
-          Comp<em>á</em>s
+    <header className="border-b">
+      <div className="mx-auto flex w-full max-w-4xl flex-wrap items-center gap-2 px-4 py-3 sm:px-6">
+        <Link href="/events" className="font-heading text-lg font-bold">
+          {school?.name ?? "Compás"}
         </Link>
-        <span className="text-mini text-paper-dim">{school?.name ?? "Clase de bachata"}</span>
 
-        <nav className="ml-auto flex flex-wrap items-center gap-3 text-small">
+        <nav className="ml-2 flex items-center gap-1">
+          <Button variant="ghost" size="sm" nativeButton={false} render={<Link href="/events" />}>
+            Clases
+          </Button>
+          <Button variant="ghost" size="sm" nativeButton={false} render={<Link href="/lessons" />}>
+            Cursos
+          </Button>
+        </nav>
+
+        <div className="ml-auto flex flex-wrap items-center gap-2">
           {!user && (
-            <Link href="/login" className="text-paper-dim hover:text-paper">
+            <Button variant="outline" size="sm" nativeButton={false} render={<Link href="/login" />}>
               Entrar
-            </Link>
+            </Button>
           )}
           {user && (
-            <span className="flex items-center gap-2 text-paper-dim">
-              <span className={`av ${user.canUpload ? "av-p" : ""}`}>{initials(user.name ?? user.email)}</span>
-              <span className={`tag ${user.canUpload ? "tag-p" : ""}`}>{user.role}</span>
-            </span>
+            <>
+              <Avatar className="size-7">
+                <AvatarFallback className="text-xs">{initials(user.name ?? user.email)}</AvatarFallback>
+              </Avatar>
+              <Badge variant={user.canUpload ? "default" : "secondary"}>{user.role}</Badge>
+            </>
           )}
           {user?.isAdmin && (
-            <Link href="/admin" className="text-paper-dim hover:text-paper">
+            <Button variant="ghost" size="sm" nativeButton={false} render={<Link href="/admin" />}>
               Personas
-            </Link>
+            </Button>
           )}
           {user?.canUpload && (
-            <Link href="/subir" className="btn btn-primary !min-h-9">
+            <Button size="sm" nativeButton={false} render={<Link href="/subir" />}>
               Subir vídeo
-            </Link>
+            </Button>
           )}
           {user && (
             <form action="/auth/signout" method="post">
-              <button className="text-paper-dim hover:text-paper">Salir</button>
+              <Button variant="ghost" size="sm" type="submit">
+                Salir
+              </Button>
             </form>
           )}
-        </nav>
+        </div>
       </div>
     </header>
   );

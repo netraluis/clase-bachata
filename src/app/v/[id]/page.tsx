@@ -1,7 +1,10 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getVideo, formatDate } from "@/lib/data";
+import { getVideo, sessionTitle } from "@/lib/data";
+import { formatDate } from "@/lib/format";
 import { getSessionUser } from "@/lib/auth";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Player } from "./player";
 
 export const dynamic = "force-dynamic";
@@ -16,14 +19,21 @@ export default async function VideoPage({ params }: { params: Promise<{ id: stri
   const vertical = !!(v.width && v.height && v.height > v.width);
 
   return (
-    <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-5 px-4 py-6 sm:px-6">
-      <Link href={`/c/${v.course.id}`} className="text-small text-paper-dim hover:text-paper">
-        ← {v.course.name}
-      </Link>
+    <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-5 px-4 py-6 sm:px-6">
+      <Button variant="link" className="w-fit px-0" nativeButton={false} render={<Link href="/events" />}>
+        ← Clases
+      </Button>
 
-      <div>
-        <h1 className="text-display">{v.title}</h1>
-        <p className="mt-1 text-small text-paper-dim">{formatDate(v.session.date)}</p>
+      <div className="flex flex-col gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <Badge variant="outline" render={<Link href={`/lessons/${v.course.id}`} />}>
+            {v.course.name}
+          </Badge>
+          <span className="text-sm text-muted-foreground">
+            {sessionTitle(v.session)} · {formatDate(v.session.date)}
+          </span>
+        </div>
+        <h1 className="text-2xl font-bold">{v.title}</h1>
       </div>
 
       <Player

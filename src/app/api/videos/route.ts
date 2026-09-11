@@ -11,6 +11,7 @@ type Body = {
   title?: string;
   course_id?: string;
   date?: string;
+  session_title?: string | null;
   notes?: string | null;
   duration_s?: number;
   width?: number;
@@ -53,7 +54,11 @@ export async function POST(request: Request) {
 
   let session;
   try {
-    session = await findOrCreateSession(b.course_id!, b.date!);
+    session = await findOrCreateSession(
+      b.course_id!,
+      b.date!,
+      typeof b.session_title === "string" ? b.session_title.trim().slice(0, 120) : null,
+    );
   } catch (e) {
     return NextResponse.json({ error: e instanceof Error ? e.message : "No se pudo crear la sesión" }, { status: 500 });
   }

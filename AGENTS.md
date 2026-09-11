@@ -10,4 +10,4 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 # Diseño
 
-Toda la interfaz sigue el sistema de diseño Compás, documentado en `docs/DESIGN.md`. Antes de crear o tocar una pantalla, léelo. Tokens y componentes están en `src/app/globals.css`; no se inventan colores, tamaños de texto ni radios fuera de los definidos ahí.
+La interfaz se hace con componentes de shadcn/ui, planos y sin personalizar, con el preset `b4ccpYALa4`. Antes de escribir cualquier elemento de interfaz, búscalo en https://ui.shadcn.com/docs/components y descárgalo con `npx shadcn@latest add <componente>`. No se crean clases CSS propias ni se usan colores fuera del tema. Reglas y rutas en `docs/DESIGN.md`.

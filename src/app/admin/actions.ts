@@ -38,7 +38,8 @@ export async function createCourse(formData: FormData): Promise<void> {
     start_time: /^\d{2}:\d{2}$/.test(start) ? start : null,
   });
   revalidatePath("/admin");
-  revalidatePath("/");
+  revalidatePath("/lessons");
+  revalidatePath("/events");
 }
 
 export async function renameSchool(formData: FormData): Promise<void> {

@@ -8,7 +8,7 @@ Antes los vídeos se compartían por WhatsApp y se perdían en el scroll. Esto s
 - **Bucle entre dos marcas** para repetir un fragmento hasta que salga.
 - **Nota del profe** por vídeo: "ojo al peso en el tercer tiempo".
 
-En producción: https://clase-bachata.vercel.app. La lista y el reproductor son públicos; subir requiere cuenta de Google con rol de profe.
+En producción: https://clase-bachata.vercel.app. Las clases, los cursos y el reproductor son públicos; subir vídeos y dejar notas requiere cuenta de Google con rol de profe.
 
 <p align="center">
   <img src="docs/lista-movil.png" width="300" alt="Lista de vídeos agrupada por fecha de clase">
@@ -70,7 +70,7 @@ Tabla `profiles` con `admin`, `profe` o `alumno`. Quien entra con Google aparece
 
 ## Diseño
 
-La interfaz sigue el sistema "Compás": oscuro, con color solo donde significa algo (dorado para lo que dice quien enseña, rosa para lo que pregunta quien aprende, verde para lo resuelto), cinco tamaños de texto y áreas de toque de 44 px. Está documentado en [docs/DESIGN.md](docs/DESIGN.md) y la maqueta original en `docs/design-system.html`.
+Componentes de [shadcn/ui](https://ui.shadcn.com/docs/components) sin personalizar, con el preset `b4ccpYALa4` (Base UI, olive, acento verde, Noto Sans y Merriweather). Reglas, rutas y patrones de interacción del reproductor en [docs/DESIGN.md](docs/DESIGN.md).
 
 ## Desarrollo
 

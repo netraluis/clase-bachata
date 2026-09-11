@@ -6,7 +6,7 @@ import { requestOrigin } from "@/lib/request-origin";
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const code = searchParams.get("code");
-  const next = searchParams.get("next") ?? "/";
+  const next = searchParams.get("next") ?? "/events";
   const origin = requestOrigin(request.headers);
 
   if (code) {

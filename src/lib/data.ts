@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { presignGet } from "@/lib/r2";
 import type { Role } from "@/lib/auth";
+import { formatDate } from "@/lib/format";
 
 // Jerarquía: escuela → curso → sesión → vídeo → comentario.
 
@@ -12,7 +13,7 @@ export type Course = {
   weekday: number | null; // 0 domingo … 6 sábado
   start_time: string | null; // "20:00:00"
 };
-export type Session = { id: string; course_id: string; date: string; notes: string | null };
+export type Session = { id: string; course_id: string; date: string; title: string | null; notes: string | null };
 export type VideoRow = {
   id: string;
   session_id: string;
@@ -80,7 +81,7 @@ export async function listSessionsWithVideos(
   const supabase = await createClient();
   const { data: sessions } = await supabase
     .from("sessions")
-    .select("id, course_id, date, notes")
+    .select("id, course_id, date, title, notes")
     .eq("course_id", courseId)
     .order("date", { ascending: false });
   const list = (sessions ?? []) as Session[];
@@ -101,6 +102,39 @@ export async function listSessionsWithVideos(
   return list.map((s) => ({ ...s, videos: withThumbs.filter((v) => v.session_id === s.id) }));
 }
 
+// Todas las clases de la escuela, de más reciente a menos, con su curso y sus vídeos.
+export async function listAllSessions(): Promise<
+  (Session & { course: Course; videos: (VideoRow & { thumbUrl: string | null })[] })[]
+> {
+  const supabase = await createClient();
+  const [{ data: sessions }, { data: courses }] = await Promise.all([
+    supabase.from("sessions").select("id, course_id, date, title, notes").order("date", { ascending: false }).order("created_at", { ascending: false }),
+    supabase.from("courses").select("id, school_id, name, weekday, start_time"),
+  ]);
+  const list = (sessions ?? []) as Session[];
+  const courseById = new Map(((courses ?? []) as Course[]).map((c) => [c.id, c]));
+  if (list.length === 0) return [];
+
+  const { data: videos } = await supabase
+    .from("videos")
+    .select(VIDEO_COLS)
+    .in("session_id", list.map((s) => s.id))
+    .order("created_at", { ascending: true });
+  const withThumbs = await Promise.all(
+    ((videos ?? []) as VideoRow[]).map(async (v) => ({
+      ...v,
+      thumbUrl: v.thumb_key ? await presignGet(v.thumb_key) : null,
+    })),
+  );
+  return list
+    .filter((s) => courseById.has(s.course_id))
+    .map((s) => ({ ...s, course: courseById.get(s.course_id)!, videos: withThumbs.filter((v) => v.session_id === s.id) }));
+}
+
+export function sessionTitle(s: { title: string | null; date: string }): string {
+  return s.title?.trim() || `Clase del ${formatDate(s.date).replace(/^\w+, /, "")}`;
+}
+
 export async function getVideo(
   id: string,
 ): Promise<(VideoRow & { videoUrl: string; session: Session; course: Course; comments: Comment[] }) | null> {
@@ -111,7 +145,7 @@ export async function getVideo(
 
   const { data: session } = await supabase
     .from("sessions")
-    .select("id, course_id, date, notes")
+    .select("id, course_id, date, title, notes")
     .eq("id", video.session_id)
     .single();
   const { data: course } = await supabase
@@ -136,27 +170,34 @@ export async function getVideo(
 
 // Busca la sesión de un curso en una fecha; la crea si no existe.
 // Requiere rol profe o admin (política RLS de sessions).
-export async function findOrCreateSession(courseId: string, date: string): Promise<Session> {
+export async function findOrCreateSession(courseId: string, date: string, title?: string | null): Promise<Session> {
   const supabase = await createClient();
   const { data: found } = await supabase
     .from("sessions")
-    .select("id, course_id, date, notes")
+    .select("id, course_id, date, title, notes")
     .eq("course_id", courseId)
     .eq("date", date)
     .maybeSingle();
-  if (found) return found as Session;
+  if (found) {
+    const f = found as Session;
+    if (title && !f.title) {
+      await supabase.from("sessions").update({ title }).eq("id", f.id);
+      f.title = title;
+    }
+    return f;
+  }
 
   const { data: created, error } = await supabase
     .from("sessions")
-    .insert({ course_id: courseId, date })
-    .select("id, course_id, date, notes")
+    .insert({ course_id: courseId, date, title: title || null })
+    .select("id, course_id, date, title, notes")
     .single();
   if (created) return created as Session;
 
   // Carrera: otro la creó a la vez. Volver a buscar.
   const { data: again } = await supabase
     .from("sessions")
-    .select("id, course_id, date, notes")
+    .select("id, course_id, date, title, notes")
     .eq("course_id", courseId)
     .eq("date", date)
     .maybeSingle();

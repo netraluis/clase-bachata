@@ -2,33 +2,40 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSessionUser, type Role } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { getSchool, listCourses, formatSchedule, WEEKDAYS } from "@/lib/data";
+import { getSchool, listCourses } from "@/lib/data";
+import { formatSchedule, WEEKDAYS } from "@/lib/format";
 import { initials } from "@/components/header";
+import { Button } from "@/components/ui/button";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { RoleSelect } from "./role-select";
+import { WeekdaySelect } from "./weekday-select";
 import { createCourse, renameSchool } from "./actions";
 
 export const dynamic = "force-dynamic";
 
 type ProfileRow = { id: string; email: string; display_name: string | null; role: Role; created_at: string };
 
-// Administración: una web, no una app. Quien dirige la escuela entra una vez
-// por semana a dar de alta gente, ver qué clases se han quedado sin vídeo y
-// controlar cuánto almacenamiento se usa.
+// Administración: alta de gente, cursos, y qué clases se han quedado sin vídeo.
 export default async function AdminPage() {
   const user = await getSessionUser();
   if (!user) redirect("/login");
-  if (!user.isAdmin) redirect("/");
+  if (!user.isAdmin) redirect("/events");
 
   const supabase = await createClient();
-  const [school, courses, { data: profiles }, { data: sizes }, { data: uploads }, { data: recentSessions }] =
-    await Promise.all([
-      getSchool(),
-      listCourses(),
-      supabase.from("profiles").select("id, email, display_name, role, created_at").order("created_at"),
-      supabase.from("videos").select("size_bytes"),
-      supabase.from("videos").select("uploaded_by"),
-      supabase.from("sessions").select("course_id, date").gte("date", isoDaysAgo(7)),
-    ]);
+  const [school, courses, { data: profiles }, { data: sizes }, { data: uploads }, { data: recentSessions }] = await Promise.all([
+    getSchool(),
+    listCourses(),
+    supabase.from("profiles").select("id, email, display_name, role, created_at").order("created_at"),
+    supabase.from("videos").select("size_bytes"),
+    supabase.from("videos").select("uploaded_by"),
+    supabase.from("sessions").select("course_id, date").gte("date", isoDaysAgo(7)),
+  ]);
 
   const people = (profiles ?? []) as ProfileRow[];
   const bytes = (sizes ?? []).reduce((acc, v) => acc + (Number(v.size_bytes) || 0), 0);
@@ -36,119 +43,150 @@ export default async function AdminPage() {
   const videosBy = new Map<string, number>();
   for (const v of uploads ?? []) if (v.uploaded_by) videosBy.set(v.uploaded_by, (videosBy.get(v.uploaded_by) ?? 0) + 1);
 
-  // Clases sin vídeo esta semana: cursos cuyo día ya ha pasado esta semana y no tienen sesión ese día.
   const today = new Date();
   const missing = courses.filter((c) => {
     if (c.weekday == null) return false;
     const d = new Date(today);
-    const diff = (today.getDay() - c.weekday + 7) % 7;
-    d.setDate(today.getDate() - diff);
+    d.setDate(today.getDate() - ((today.getDay() - c.weekday + 7) % 7));
     const iso = isoDate(d);
     return !(recentSessions ?? []).some((s) => s.course_id === c.id && s.date === iso);
   });
 
   return (
-    <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 px-4 py-6 sm:px-6">
-      <Link href="/" className="text-small text-paper-dim hover:text-paper">← Cursos</Link>
+    <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-6 px-4 py-6 sm:px-6">
+      <Button variant="link" className="w-fit px-0" nativeButton={false} render={<Link href="/events" />}>
+        ← Clases
+      </Button>
 
-      <div className="card overflow-hidden">
-        <div className="flex flex-wrap items-center gap-3 border-b border-ink-3 px-5 py-4">
-          <form action={renameSchool} className="flex flex-1 items-center gap-2">
-            <input name="name" defaultValue={school?.name ?? ""} className="field !min-h-9 !w-auto flex-1 text-lede font-disp" aria-label="Nombre de la escuela" />
-            <button className="btn !min-h-9">Guardar</button>
-          </form>
-          <small className="text-mini text-paper-dim">Acceso desde navegador</small>
-        </div>
-        <div className="grid grid-cols-3 gap-px bg-ink-3">
-          <Stat label="Almacenamiento en uso" value={formatBytes(bytes)} />
-          <Stat label="Alumnos con acceso" value={String(alumnos)} />
-          <Stat label="Clases sin vídeo esta semana" value={String(missing.length)} warn={missing.length > 0} />
-        </div>
-        {missing.length > 0 && (
-          <p className="px-5 py-3 text-small text-paper-dim">
-            Sin vídeo: {missing.map((c) => c.name).join(", ")}.
-          </p>
-        )}
-      </div>
-
-      <section className="card">
-        <div className="border-b border-ink-3 px-5 py-4">
-          <h2 className="text-lede">Cursos</h2>
-        </div>
-        <div className="px-5 pb-2">
-          {courses.map((c) => (
-            <div key={c.id} className="flex items-center gap-3 border-t border-ink-3 py-3 text-small first:border-t-0">
-              <div className="min-w-0 flex-1">
-                <div className="font-semibold">{c.name}</div>
-                <div className="text-mini text-paper-dim">{formatSchedule(c) ?? "Sin horario"}</div>
-              </div>
-              <span className="text-mini text-paper-dim">
-                {c.sessions} sesiones, {c.videos} vídeos
-              </span>
+      <Card>
+        <CardHeader>
+          <CardTitle>Escuela</CardTitle>
+          <CardDescription>Acceso desde navegador</CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-4">
+          <form action={renameSchool} className="flex flex-wrap items-end gap-2">
+            <div className="grid flex-1 gap-2">
+              <Label htmlFor="school">Nombre</Label>
+              <Input id="school" name="name" defaultValue={school?.name ?? ""} />
             </div>
-          ))}
-        </div>
-        <form action={createCourse} className="flex flex-wrap items-end gap-2 border-t border-ink-3 px-5 py-4">
-          <label className="flex min-w-40 flex-1 flex-col gap-1 text-mini text-paper-dim">
-            Nuevo curso
-            <input name="name" required placeholder="Salsa intermedio" className="field !min-h-10" />
-          </label>
-          <label className="flex flex-col gap-1 text-mini text-paper-dim">
-            Día
-            <select name="weekday" className="field !min-h-10 !w-auto" defaultValue="">
-              <option value="">Sin día</option>
-              {WEEKDAYS.map((d, i) => (
-                <option key={i} value={i}>{d}</option>
-              ))}
-            </select>
-          </label>
-          <label className="flex flex-col gap-1 text-mini text-paper-dim">
-            Hora
-            <input name="start_time" type="time" className="field !min-h-10 !w-auto" />
-          </label>
-          <button className="btn btn-primary !min-h-10">Crear</button>
-        </form>
-      </section>
+            <Button type="submit" variant="outline">Guardar</Button>
+          </form>
+          <div className="grid gap-4 sm:grid-cols-3">
+            <Stat label="Almacenamiento en uso" value={formatBytes(bytes)} />
+            <Stat label="Alumnos con acceso" value={String(alumnos)} />
+            <Stat label="Clases sin vídeo esta semana" value={String(missing.length)} warn={missing.length > 0} />
+          </div>
+          {missing.length > 0 && (
+            <Alert>
+              <AlertDescription>Sin vídeo esta semana: {missing.map((c) => c.name).join(", ")}.</AlertDescription>
+            </Alert>
+          )}
+        </CardContent>
+      </Card>
 
-      <section className="card">
-        <div className="border-b border-ink-3 px-5 py-4">
-          <h2 className="text-lede">Personas</h2>
-          <p className="mt-1 text-small text-paper-dim">
-            Quien entra con Google aparece aquí como alumno. Cambia el rol a profe para que pueda subir vídeos.
-          </p>
-        </div>
-        <div className="px-5 pb-3">
-          {people.map((p) => {
-            const n = videosBy.get(p.id) ?? 0;
-            return (
-              <div key={p.id} className="flex flex-wrap items-center gap-3 border-t border-ink-3 py-3 text-small first:border-t-0">
-                <span className={`av ${p.role !== "alumno" ? "av-p" : ""}`}>{initials(p.display_name ?? p.email)}</span>
-                <div className="min-w-0 flex-1">
-                  <div className="truncate font-semibold">{p.display_name ?? p.email}</div>
-                  <div className="truncate text-mini text-paper-dim">{p.email}</div>
-                </div>
-                <span className="text-mini text-paper-dim">
-                  {p.role === "alumno" ? `Desde el ${shortDate(p.created_at)}` : `${n} ${n === 1 ? "vídeo" : "vídeos"}`}
-                </span>
-                <RoleSelect id={p.id} role={p.role} disabled={p.id === user.id} />
-              </div>
-            );
-          })}
-        </div>
-      </section>
+      <Card>
+        <CardHeader>
+          <CardTitle>Cursos</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Curso</TableHead>
+                <TableHead>Horario</TableHead>
+                <TableHead className="text-right">Clases</TableHead>
+                <TableHead className="text-right">Vídeos</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {courses.map((c) => (
+                <TableRow key={c.id}>
+                  <TableCell className="font-medium">{c.name}</TableCell>
+                  <TableCell className="text-muted-foreground">{formatSchedule(c) ?? "Sin horario"}</TableCell>
+                  <TableCell className="text-right">{c.sessions}</TableCell>
+                  <TableCell className="text-right">{c.videos}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+        <CardFooter className="border-t">
+          <form action={createCourse} className="flex w-full flex-wrap items-end gap-2">
+            <div className="grid min-w-40 flex-1 gap-2">
+              <Label htmlFor="course-name">Nuevo curso</Label>
+              <Input id="course-name" name="name" required placeholder="Salsa intermedio" />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="weekday">Día</Label>
+              <WeekdaySelect days={WEEKDAYS} />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="start_time">Hora</Label>
+              <Input id="start_time" name="start_time" type="time" />
+            </div>
+            <Button type="submit">Crear</Button>
+          </form>
+        </CardFooter>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Personas</CardTitle>
+          <CardDescription>Quien entra con Google aparece aquí como alumno. Cambia el rol a profe para que pueda subir vídeos y dejar notas.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Persona</TableHead>
+                <TableHead>Actividad</TableHead>
+                <TableHead className="text-right">Rol</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {people.map((p) => {
+                const n = videosBy.get(p.id) ?? 0;
+                return (
+                  <TableRow key={p.id}>
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        <Avatar className="size-8">
+                          <AvatarFallback className="text-xs">{initials(p.display_name ?? p.email)}</AvatarFallback>
+                        </Avatar>
+                        <div className="min-w-0">
+                          <p className="truncate font-medium">{p.display_name ?? p.email}</p>
+                          <p className="truncate text-xs text-muted-foreground">{p.email}</p>
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {p.role === "alumno" ? `Desde el ${shortDate(p.created_at)}` : `${n} ${n === 1 ? "vídeo" : "vídeos"}`}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        {p.id === user.id && <Badge variant="secondary">tú</Badge>}
+                        <RoleSelect id={p.id} role={p.role} disabled={p.id === user.id} />
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
     </main>
   );
 }
 
 function Stat({ label, value, warn }: { label: string; value: string; warn?: boolean }) {
   return (
-    <div className="bg-ink-2 px-5 py-4">
-      <small className="block text-mini text-paper-dim">{label}</small>
-      <b className={`font-disp text-display font-medium ${warn ? "text-brass" : ""}`}>{value}</b>
+    <div className="rounded-lg border p-4">
+      <p className="text-xs text-muted-foreground">{label}</p>
+      <p className={`font-heading text-2xl font-bold ${warn ? "text-primary" : ""}`}>{value}</p>
     </div>
   );
 }
-
 function formatBytes(n: number): string {
   if (n >= 1024 ** 3) return `${(n / 1024 ** 3).toFixed(1)} GB`;
   if (n >= 1024 ** 2) return `${Math.round(n / 1024 ** 2)} MB`;

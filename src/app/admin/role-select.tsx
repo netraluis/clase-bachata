@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import type { Role } from "@/lib/auth";
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { setRole } from "./actions";
 
 export function RoleSelect({ id, role, disabled }: { id: string; role: Role; disabled?: boolean }) {
@@ -11,11 +12,11 @@ export function RoleSelect({ id, role, disabled }: { id: string; role: Role; dis
 
   return (
     <div className="flex items-center gap-2">
-      <select
+      <Select
         value={value}
         disabled={disabled || pending}
-        onChange={(e) => {
-          const next = e.target.value as Role;
+        onValueChange={(v) => {
+          const next = String(v) as Role;
           const prev = value;
           setValue(next);
           start(async () => {
@@ -26,13 +27,17 @@ export function RoleSelect({ id, role, disabled }: { id: string; role: Role; dis
             } else setError(null);
           });
         }}
-        className="field !w-auto !min-h-9 !py-1 text-small"
       >
-        <option value="alumno">alumno</option>
-        <option value="profe">profe</option>
-        <option value="admin">admin</option>
-      </select>
-      {error && <span className="text-mini text-rosa">{error}</span>}
+        <SelectTrigger size="sm" aria-label="Rol">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="alumno">alumno</SelectItem>
+          <SelectItem value="profe">profe</SelectItem>
+          <SelectItem value="admin">admin</SelectItem>
+        </SelectContent>
+      </Select>
+      {error && <span className="text-xs text-destructive">{error}</span>}
     </div>
   );
 }
