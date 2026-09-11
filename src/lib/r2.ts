@@ -4,7 +4,7 @@ import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 // R2 habla la API de S3: mismo SDK, endpoint de Cloudflare, región "auto".
 let client: S3Client | null = null;
 
-function r2() {
+export function r2() {
   if (client) return client;
   const { R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY } = process.env;
   if (!R2_ACCOUNT_ID || !R2_ACCESS_KEY_ID || !R2_SECRET_ACCESS_KEY) {
@@ -18,7 +18,7 @@ function r2() {
   return client;
 }
 
-const bucket = () => process.env.R2_BUCKET ?? "clase-bachata";
+export const bucket = () => process.env.R2_BUCKET ?? "clase-bachata";
 
 // URL para que el navegador haga PUT directo. 10 minutos por defecto.
 export function presignPut(key: string, contentType: string, expiresIn = 600) {
