@@ -1,8 +1,6 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSessionUser } from "@/lib/auth";
 import { listCourses } from "@/lib/data";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Uploader } from "./uploader";
@@ -19,9 +17,6 @@ export default async function SubirPage() {
 
   return (
     <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-5 px-4 py-6 sm:px-6">
-      <Button variant="link" className="w-fit px-0" nativeButton={false} render={<Link href="/events" />}>
-        ← Clases
-      </Button>
       {courses.length === 0 ? (
         <Alert>
           <AlertDescription>No hay cursos. El admin tiene que crear uno en Personas.</AlertDescription>

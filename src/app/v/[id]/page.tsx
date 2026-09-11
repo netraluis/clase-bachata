@@ -3,7 +3,6 @@ import { notFound } from "next/navigation";
 import { getVideo, sessionTitle } from "@/lib/data";
 import { formatDate } from "@/lib/format";
 import { getSessionUser } from "@/lib/auth";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Player } from "./player";
 
@@ -20,9 +19,6 @@ export default async function VideoPage({ params }: { params: Promise<{ id: stri
 
   return (
     <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-5 px-4 py-6 sm:px-6">
-      <Button variant="link" className="w-fit px-0" nativeButton={false} render={<Link href="/events" />}>
-        ← Clases
-      </Button>
 
       <div className="flex flex-col gap-2">
         <div className="flex flex-wrap items-center gap-2">

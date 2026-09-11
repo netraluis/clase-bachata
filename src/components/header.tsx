@@ -4,8 +4,9 @@ import { getSchool } from "@/lib/data";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { HeaderNav } from "@/components/header-nav";
 
-// Cabecera común: escuela, navegación y estado de sesión. Server Component.
+// Cabecera común: escuela, navegación con la sección actual marcada, y sesión.
 export async function Header() {
   const [user, school] = await Promise.all([getSessionUser(), getSchool()]);
 
@@ -16,14 +17,9 @@ export async function Header() {
           {school?.name ?? "Compás"}
         </Link>
 
-        <nav className="ml-2 flex items-center gap-1">
-          <Button variant="ghost" size="sm" nativeButton={false} render={<Link href="/events" />}>
-            Clases
-          </Button>
-          <Button variant="ghost" size="sm" nativeButton={false} render={<Link href="/lessons" />}>
-            Cursos
-          </Button>
-        </nav>
+        <div className="ml-2">
+          <HeaderNav canUpload={!!user?.canUpload} isAdmin={!!user?.isAdmin} />
+        </div>
 
         <div className="ml-auto flex flex-wrap items-center gap-2">
           {!user && (
@@ -37,24 +33,12 @@ export async function Header() {
                 <AvatarFallback className="text-xs">{initials(user.name ?? user.email)}</AvatarFallback>
               </Avatar>
               <Badge variant={user.canUpload ? "default" : "secondary"}>{user.role}</Badge>
+              <form action="/auth/signout" method="post">
+                <Button variant="ghost" size="sm" type="submit">
+                  Salir
+                </Button>
+              </form>
             </>
-          )}
-          {user?.isAdmin && (
-            <Button variant="ghost" size="sm" nativeButton={false} render={<Link href="/admin" />}>
-              Personas
-            </Button>
-          )}
-          {user?.canUpload && (
-            <Button size="sm" nativeButton={false} render={<Link href="/subir" />}>
-              Subir vídeo
-            </Button>
-          )}
-          {user && (
-            <form action="/auth/signout" method="post">
-              <Button variant="ghost" size="sm" type="submit">
-                Salir
-              </Button>
-            </form>
           )}
         </div>
       </div>

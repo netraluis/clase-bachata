@@ -1,9 +1,7 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getCourse, listSessionsWithVideos, sessionTitle } from "@/lib/data";
 import { formatDate, formatSchedule } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
-import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Empty, EmptyHeader, EmptyTitle, EmptyDescription } from "@/components/ui/empty";
 import { VideoList } from "@/components/video-list";
@@ -27,9 +25,6 @@ export default async function LessonPage({ params }: { params: Promise<{ id: str
 
   return (
     <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-6 px-4 py-6 sm:px-6">
-      <Button variant="link" className="w-fit px-0" nativeButton={false} render={<Link href="/lessons" />}>
-        ← Cursos
-      </Button>
 
       <div>
         <h1 className="text-2xl font-bold">{course.name}</h1>

@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSessionUser, type Role } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
@@ -54,9 +53,6 @@ export default async function AdminPage() {
 
   return (
     <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-6 px-4 py-6 sm:px-6">
-      <Button variant="link" className="w-fit px-0" nativeButton={false} render={<Link href="/events" />}>
-        ← Clases
-      </Button>
 
       <Card>
         <CardHeader>
