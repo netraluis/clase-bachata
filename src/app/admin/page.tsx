@@ -7,7 +7,7 @@ import { initials } from "@/components/header";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Field, FieldLabel } from "@/components/ui/field";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -61,10 +61,10 @@ export default async function AdminPage() {
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
           <form action={renameSchool} className="flex flex-wrap items-end gap-2">
-            <div className="grid flex-1 gap-2">
-              <Label htmlFor="school">Nombre</Label>
+            <Field className="flex-1">
+              <FieldLabel htmlFor="school">Nombre</FieldLabel>
               <Input id="school" name="name" defaultValue={school?.name ?? ""} />
-            </div>
+            </Field>
             <Button type="submit" variant="outline">Guardar</Button>
           </form>
           <div className="grid gap-4 sm:grid-cols-3">
@@ -108,18 +108,18 @@ export default async function AdminPage() {
         </CardContent>
         <CardFooter className="border-t">
           <form action={createCourse} className="flex w-full flex-wrap items-end gap-2">
-            <div className="grid min-w-40 flex-1 gap-2">
-              <Label htmlFor="course-name">Nuevo curso</Label>
+            <Field className="min-w-40 flex-1">
+              <FieldLabel htmlFor="course-name">Nuevo curso</FieldLabel>
               <Input id="course-name" name="name" required placeholder="Salsa intermedio" />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="weekday">Día</Label>
+            </Field>
+            <Field className="w-auto">
+              <FieldLabel htmlFor="weekday">Día</FieldLabel>
               <WeekdaySelect days={WEEKDAYS} />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="start_time">Hora</Label>
+            </Field>
+            <Field className="w-auto">
+              <FieldLabel htmlFor="start_time">Hora</FieldLabel>
               <Input id="start_time" name="start_time" type="time" />
-            </div>
+            </Field>
             <Button type="submit">Crear</Button>
           </form>
         </CardFooter>
@@ -177,10 +177,12 @@ export default async function AdminPage() {
 
 function Stat({ label, value, warn }: { label: string; value: string; warn?: boolean }) {
   return (
-    <div className="rounded-lg border p-4">
-      <p className="text-xs text-muted-foreground">{label}</p>
-      <p className={`font-heading text-2xl font-bold ${warn ? "text-primary" : ""}`}>{value}</p>
-    </div>
+    <Card size="sm">
+      <CardHeader>
+        <CardDescription>{label}</CardDescription>
+        <CardTitle className={`text-2xl ${warn ? "text-primary" : ""}`}>{value}</CardTitle>
+      </CardHeader>
+    </Card>
   );
 }
 function formatBytes(n: number): string {

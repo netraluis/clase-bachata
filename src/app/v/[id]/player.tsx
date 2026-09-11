@@ -13,6 +13,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Kbd } from "@/components/ui/kbd";
+import { Item, ItemGroup, ItemMedia, ItemContent, ItemTitle, ItemDescription, ItemActions, ItemSeparator } from "@/components/ui/item";
+import { Empty, EmptyHeader, EmptyTitle, EmptyDescription } from "@/components/ui/empty";
 import { addComment, deleteComment } from "./actions";
 
 const SPEEDS = ["0.5", "0.75", "1"] as const;
@@ -348,6 +351,7 @@ export function Player({
               <X data-icon="inline-start" />
               Salir
             </Button>
+            <Kbd>Esc</Kbd>
           </CardContent>
         </Card>
       )}
@@ -358,40 +362,59 @@ export function Player({
           <CardTitle>Notas del profe</CardTitle>
           <CardDescription>{comments.length === 1 ? "1 nota" : `${comments.length} notas`}</CardDescription>
         </CardHeader>
-        <CardContent className="flex flex-col divide-y">
-          {profeNote && (
-            <div className="flex gap-3 py-3">
-              <Badge variant="secondary">general</Badge>
-              <p className="text-sm whitespace-pre-line">{profeNote}</p>
-            </div>
+        <CardContent>
+          {comments.length === 0 && !profeNote ? (
+            <Empty className="py-6">
+              <EmptyHeader>
+                <EmptyTitle>Todavía no hay notas</EmptyTitle>
+                <EmptyDescription>
+                  {viewer?.canWrite ? "Pausa el vídeo donde quieras y escribe abajo." : "El profe todavía no ha dejado notas en este vídeo."}
+                </EmptyDescription>
+              </EmptyHeader>
+            </Empty>
+          ) : (
+            <ItemGroup>
+              {profeNote && (
+                <Item size="sm">
+                  <ItemMedia>
+                    <Badge variant="secondary">general</Badge>
+                  </ItemMedia>
+                  <ItemContent>
+                    <ItemDescription className="whitespace-pre-line text-foreground">{profeNote}</ItemDescription>
+                  </ItemContent>
+                </Item>
+              )}
+              {comments.map((c, i) => {
+                const canDelete = viewer && (viewer.id === c.author_id || viewer.isAdmin);
+                const dim = selected && selected !== c.id;
+                return (
+                  <div key={c.id}>
+                    {(i > 0 || profeNote) && <ItemSeparator />}
+                    <Item size="sm" className={`transition-opacity ${dim ? "opacity-40" : ""}`}>
+                      <ItemMedia>
+                        <Button variant="outline" size="sm" onClick={() => pick(c)} aria-pressed={selected === c.id}>
+                          {formatStamp(c.t_seconds)}
+                        </Button>
+                      </ItemMedia>
+                      <ItemContent>
+                        <ItemDescription>
+                          {c.author_name}, {c.author_role}
+                        </ItemDescription>
+                        <ItemTitle className="whitespace-pre-line font-normal">{c.body}</ItemTitle>
+                      </ItemContent>
+                      {canDelete && (
+                        <ItemActions>
+                          <Button variant="ghost" size="icon" aria-label="Borrar nota" onClick={() => remove(c)} disabled={pending}>
+                            <X />
+                          </Button>
+                        </ItemActions>
+                      )}
+                    </Item>
+                  </div>
+                );
+              })}
+            </ItemGroup>
           )}
-          {comments.length === 0 && !profeNote && (
-            <p className="py-2 text-sm text-muted-foreground">
-              {viewer?.canWrite ? "Todavía no hay notas. Pausa el vídeo donde quieras y escribe abajo." : "Todavía no hay notas del profe en este vídeo."}
-            </p>
-          )}
-          {comments.map((c) => {
-            const canDelete = viewer && (viewer.id === c.author_id || viewer.isAdmin);
-            const dim = selected && selected !== c.id;
-            return (
-              <div key={c.id} className={`flex items-start gap-3 py-3 transition-opacity ${dim ? "opacity-40" : ""}`}>
-                <Button variant="outline" size="sm" onClick={() => pick(c)} aria-pressed={selected === c.id}>
-                  {formatStamp(c.t_seconds)}
-                </Button>
-                <div className="min-w-0 flex-1">
-                  <p className="text-xs text-muted-foreground">
-                    {c.author_name}, {c.author_role}
-                  </p>
-                  <p className="text-sm whitespace-pre-line">{c.body}</p>
-                </div>
-                {canDelete && (
-                  <Button variant="ghost" size="icon" aria-label="Borrar nota" onClick={() => remove(c)} disabled={pending}>
-                    <X />
-                  </Button>
-                )}
-              </div>
-            );
-          })}
         </CardContent>
 
         {viewer?.canWrite ? (

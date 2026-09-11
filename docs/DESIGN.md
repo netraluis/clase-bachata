@@ -16,9 +16,15 @@ Toda la interfaz se construye con componentes de [shadcn/ui](https://ui.shadcn.c
 6. **Sin enlaces de "volver".** La cabecera lleva el menú (Clases, Cursos, y Subir y Personas según el rol) y marca la sección actual con `variant="secondary"` y `aria-current="page"`; está en `src/components/header-nav.tsx`.
 7. **Enlaces con aspecto de botón:** `<Button nativeButton={false} render={<Link href="…" />}>`. Base UI exige `nativeButton={false}` cuando no se renderiza un `<button>`.
 
+## Comprobación
+
+`npm run check:ui` recorre las pantallas y falla si hay un elemento nativo con equivalente en shadcn (`button`, `input`, `select`, `table`, `label`, `ul`/`li`…) o un color fuera del tema. Ejecutarlo antes de cada commit que toque interfaz.
+
+Componentes en uso: Alert, AspectRatio, Avatar, Badge, Button, Card, Empty, Field, Input, Item, Kbd, Label, Progress, Select, Separator, Table, Textarea, Toggle, ToggleGroup, Tooltip. Las listas son `ItemGroup` + `Item`; los grupos de campo, `Field` + `FieldLabel`; los estados vacíos, `Empty`; los atajos de teclado, `Kbd`.
+
 ## Lo único que no está en shadcn
 
-La línea de tiempo del vídeo: barra de posición, marcas de notas, tramo en bucle con extremos arrastrables y la fila de tiempo. Vive en `src/app/globals.css` como clases `timeline-*`, usa solo tokens del tema (`--color-primary`, `--color-background`) y se consume desde `src/app/v/[id]/player.tsx`. El globo de cada marca es el `Tooltip` de shadcn.
+La línea de tiempo del vídeo: barra de posición, marcas de notas, tramo en bucle con extremos arrastrables y la fila de tiempo. Vive en `src/app/globals.css` como clases `timeline-*`, usa solo tokens del tema (`--color-primary`, `--color-background`) y se consume desde `src/app/v/[id]/player.tsx`. El globo de cada marca es el `Tooltip` de shadcn. El escenario del vídeo es negro a propósito, como cualquier reproductor, y es la única excepción a la regla de colores.
 
 ## Rutas
 

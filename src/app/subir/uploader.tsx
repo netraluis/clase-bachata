@@ -6,7 +6,7 @@ import { readVideoMeta, captureThumbnail, putWithProgress, lastWeekday } from "@
 import { probeMp4, isHevc, isH264, type Mp4Info } from "@/lib/mp4-probe";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Field, FieldLabel, FieldDescription, FieldGroup } from "@/components/ui/field";
 import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -147,9 +147,10 @@ export function Uploader({ courses, detectedId }: { courses: CourseOpt[]; detect
         </p>
       </div>
 
+      <FieldGroup>
       {courses.length > 1 && (
-        <div className="grid gap-2">
-          <Label htmlFor="course">Curso</Label>
+        <Field>
+          <FieldLabel htmlFor="course">Curso</FieldLabel>
           <Select
             value={courseId}
             disabled={busy}
@@ -171,42 +172,43 @@ export function Uploader({ courses, detectedId }: { courses: CourseOpt[]; detect
               ))}
             </SelectContent>
           </Select>
-        </div>
+        </Field>
       )}
 
-      <div className="grid gap-2">
-        <Label htmlFor="file">Vídeo (MP4)</Label>
+      <Field>
+        <FieldLabel htmlFor="file">Vídeo (MP4)</FieldLabel>
         <Input id="file" type="file" accept="video/mp4" disabled={busy} onChange={(e) => onPick(e.target.files?.[0] ?? null)} />
         {file && probe && (
-          <p className="text-xs text-muted-foreground">
+          <FieldDescription>
             {isH264(probe.videoCodec) ? "H.264" : (probe.videoCodec ?? "códec desconocido")}
             {probe.width && probe.height ? ` · ${probe.width}×${probe.height}` : ""}
             {probe.duration != null ? ` · ${Math.round(probe.duration)} s` : ""}
             {` · ${(file.size / 1024 / 1024).toFixed(1)} MB`}
-          </p>
+          </FieldDescription>
         )}
-      </div>
+      </Field>
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <div className="grid gap-2">
-          <Label htmlFor="date">Fecha de la clase</Label>
+        <Field>
+          <FieldLabel htmlFor="date">Fecha de la clase</FieldLabel>
           <Input id="date" type="date" value={classDate} onChange={(e) => setClassDate(e.target.value)} disabled={busy} required />
-        </div>
-        <div className="grid gap-2">
-          <Label htmlFor="session">Título de la clase (opcional)</Label>
+        </Field>
+        <Field>
+          <FieldLabel htmlFor="session">Título de la clase (opcional)</FieldLabel>
           <Input id="session" value={sessionTitle} onChange={(e) => setSessionTitle(e.target.value)} disabled={busy} placeholder="Coreo, segunda parte" />
-        </div>
+        </Field>
       </div>
 
-      <div className="grid gap-2">
-        <Label htmlFor="title">Título del vídeo</Label>
+      <Field>
+        <FieldLabel htmlFor="title">Título del vídeo</FieldLabel>
         <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} disabled={busy} required placeholder="Vuelta con peinada" />
-      </div>
+      </Field>
 
-      <div className="grid gap-2">
-        <Label htmlFor="notes">Nota general (opcional)</Label>
+      <Field>
+        <FieldLabel htmlFor="notes">Nota general (opcional)</FieldLabel>
         <Textarea id="notes" value={notes} onChange={(e) => setNotes(e.target.value)} disabled={busy} rows={2} placeholder="Las notas por momento se añaden después, viendo el vídeo" />
-      </div>
+      </Field>
+      </FieldGroup>
 
       {error && (
         <Alert variant="destructive">
