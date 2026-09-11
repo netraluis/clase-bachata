@@ -62,7 +62,7 @@ export default async function Home({
 
       {[...byDate.entries()].map(([date, items]) => (
         <section key={date} className="flex flex-col gap-3">
-          <h2 className="text-lg font-medium capitalize">{formatDate(date)}</h2>
+          <h2 className="text-lg font-medium">{formatDate(date)}</h2>
           <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3">
             {items.map((v) => (
               <li key={v.id}>

@@ -44,12 +44,13 @@ export async function getVideo(id: string): Promise<(VideoRow & { videoUrl: stri
 }
 
 export function formatDate(iso: string): string {
-  return new Date(iso + "T12:00:00").toLocaleDateString("es-ES", {
+  const s = new Date(iso + "T12:00:00").toLocaleDateString("es-ES", {
     weekday: "long",
     day: "numeric",
     month: "long",
     year: "numeric",
   });
+  return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
 export function formatDuration(s: number | null): string {

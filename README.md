@@ -8,7 +8,12 @@ Antes los vídeos se compartían por WhatsApp y se perdían en el scroll. Esto s
 - **Bucle entre dos marcas** para repetir un fragmento hasta que salga.
 - **Nota del profe** por vídeo: "ojo al peso en el tercer tiempo".
 
-En producción: https://clase-bachata.vercel.app (requiere cuenta de Google y estar en la clase).
+En producción: https://clase-bachata.vercel.app. La lista y el reproductor son públicos; subir requiere cuenta de Google con rol de profe.
+
+<p align="center">
+  <img src="docs/lista-movil.png" width="300" alt="Lista de vídeos agrupada por fecha de clase">
+  <img src="docs/reproductor-movil.png" width="300" alt="Reproductor a 0,5x con bucle entre 0:01 y 0:04">
+</p>
 
 ## Arquitectura
 

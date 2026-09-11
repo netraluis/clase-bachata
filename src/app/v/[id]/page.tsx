@@ -22,7 +22,7 @@ export default async function VideoPage({ params }: { params: Promise<{ id: stri
       <Player src={v.videoUrl} ratio={ratio} vertical={vertical} />
 
       <h1 className="text-xl font-semibold">{v.title}</h1>
-      <p className="text-sm capitalize text-zinc-600">{formatDate(v.class_date)}</p>
+      <p className="text-sm text-zinc-600">{formatDate(v.class_date)}</p>
       {v.notes && (
         <div className="rounded-lg border-l-4 border-amber-400 bg-amber-50 p-3 dark:bg-amber-950">
           <p className="mb-1 text-xs font-medium uppercase tracking-wide text-amber-800 dark:text-amber-300">
