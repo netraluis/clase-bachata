@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState, useTransition } from "react";
-import { Pause, Play, Volume2, VolumeX, X } from "lucide-react";
+import { FastForward, Pause, Play, Volume2, VolumeX, X } from "lucide-react";
 import type { Comment } from "@/lib/data";
 import { formatStamp } from "@/lib/format";
 import type { Role } from "@/lib/auth";
@@ -10,8 +10,9 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Toggle } from "@/components/ui/toggle";
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
+import { Slider } from "@/components/ui/slider";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Spinner } from "@/components/ui/spinner";
@@ -21,8 +22,11 @@ import { usePersistedBoolean } from "@/hooks/use-persisted-boolean";
 import { addComment, deleteComment } from "./actions";
 import { Filmstrip } from "./filmstrip";
 
-const SPEEDS = ["0.5", "0.75", "1"] as const;
 type Viewer = { id: string; role: Role; isAdmin: boolean; canWrite: boolean } | null;
+
+function fmtSpeed(v: number): string {
+  return String(Math.round(v * 100) / 100);
+}
 
 export function Player({
   videoId,
@@ -52,7 +56,7 @@ export function Player({
   const [playing, setPlaying] = useState(false);
   const [now, setNow] = useState(0);
   const [duration, setDuration] = useState(durationProp);
-  const [speed, setSpeed] = useState<string>("1");
+  const [speed, setSpeed] = useState<number>(1);
   // Sin sonido: se recuerda en el dispositivo (para ensayar sin música).
   const [muted, setMuted] = usePersistedBoolean("player:muted");
   useEffect(() => {
@@ -71,7 +75,7 @@ export function Player({
   const [pending, start] = useTransition();
 
   useEffect(() => {
-    if (ref.current) ref.current.playbackRate = Number(speed);
+    if (ref.current) ref.current.playbackRate = speed;
   }, [speed]);
 
   // Bucle A-B con requestAnimationFrame: timeupdate solo dispara ~4 veces/s.
@@ -146,7 +150,7 @@ export function Player({
   const played = duration ? Math.min(100, (now / duration) * 100) : 0;
   const status = [
     muted ? "sin sonido" : null,
-    speed !== "1" ? `${speed}×` : null,
+    speed !== 1 ? `${fmtSpeed(speed)}×` : null,
     trimmed ? `repitiendo ${formatStamp(a)}–${formatStamp(b)}` : null,
   ]
     .filter(Boolean)
@@ -253,26 +257,42 @@ export function Player({
       )}
       </div>
 
-      {/* Controles */}
-      <div className="flex flex-wrap items-center gap-3">
-        <Button variant="outline" onClick={togglePlay}>
-          {playing ? <Pause data-icon="inline-start" /> : <Play data-icon="inline-start" />}
-          {playing ? "Pausa" : "Reproducir"}
+      {/* Controles: solo símbolos */}
+      <div className="flex items-center gap-2">
+        <Button variant="outline" size="icon" onClick={togglePlay} aria-label={playing ? "Pausa" : "Reproducir"}>
+          {playing ? <Pause /> : <Play />}
         </Button>
-        <Toggle variant="outline" pressed={muted} onPressedChange={setMuted} aria-label={muted ? "Activar sonido" : "Quitar sonido"}>
+        <Toggle variant="outline" pressed={muted} onPressedChange={setMuted} aria-label={muted ? "Activar sonido" : "Quitar sonido"} className="size-9 px-0">
           {muted ? <VolumeX /> : <Volume2 />}
-          {muted ? "Sin sonido" : "Con sonido"}
         </Toggle>
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-muted-foreground">Velocidad</span>
-          <ToggleGroup variant="outline" value={[speed]} onValueChange={(v) => v[0] && setSpeed(String(v[0]))}>
-            {SPEEDS.map((s) => (
-              <ToggleGroupItem key={s} value={s} aria-label={`${s}×`}>
-                {s}×
-              </ToggleGroupItem>
-            ))}
-          </ToggleGroup>
-        </div>
+        <Popover>
+          <PopoverTrigger
+            render={<Button variant={speed !== 1 ? "secondary" : "outline"} size={speed !== 1 ? "sm" : "icon"} aria-label={`Velocidad ${fmtSpeed(speed)}×`} />}
+          >
+            <FastForward />
+            {speed !== 1 && <span className="tabular-nums">{fmtSpeed(speed)}×</span>}
+          </PopoverTrigger>
+          <PopoverContent className="w-64" align="start">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">Velocidad</span>
+              <span className="font-medium tabular-nums">{fmtSpeed(speed)}×</span>
+            </div>
+            <Slider
+              className="mt-3"
+              value={[speed]}
+              min={0.25}
+              max={1.5}
+              step={0.05}
+              aria-label="Velocidad de reproducción"
+              onValueChange={(v) => setSpeed(Number(Array.isArray(v) ? v[0] : v))}
+            />
+            <div className="mt-2 flex justify-between text-xs text-muted-foreground">
+              <span>0.25×</span>
+              <span>1×</span>
+              <span>1.5×</span>
+            </div>
+          </PopoverContent>
+        </Popover>
       </div>
 
       {/* Notas */}
