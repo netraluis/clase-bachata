@@ -38,7 +38,7 @@ Cada ruta tiene un `loading.tsx` con `Skeleton` que reproduce la forma de la pan
 
 ## Worker de vídeo
 
-`worker/worker.mjs` corre en un contenedor (`worker/Dockerfile`, `compose.yml`) en el ordenador de casa, con las claves de `.env.local`. Cada minuto da un latido en `worker_heartbeat`, busca vídeos sin `filmstrip_key`, descarga cada uno de R2, genera con ffmpeg una imagen de 14 fotogramas en fila y la sube a `filmstrips/<id>.jpg`. Solo hace llamadas salientes. Arrancar con `docker compose up -d --build` (o `podman compose`); log con `docker compose logs -f worker`. Es la base sobre la que irá la transcodificación a H.264 de la fase 1.5.
+`worker/worker.mjs` corre en un contenedor (`worker/Dockerfile`, `compose.yml`) en el ordenador de casa, con las claves de `.env.local`. Cada minuto da un latido en `worker_heartbeat`, busca vídeos sin `filmstrip_key`, descarga cada uno de R2, genera con ffmpeg una imagen de 14 fotogramas en fila y la sube a `filmstrips/<id>.jpg`. Solo hace llamadas salientes. En casa corre con Podman: `podman compose up -d --build`; log con `podman compose logs -f worker`. Para que vuelva solo tras un reinicio están activados `systemctl --user enable --now podman-restart` y `loginctl enable-linger`. Los mismos ficheros valen para Docker. Es la base sobre la que irá la transcodificación a H.264 de la fase 1.5.
 
 ## Rendimiento
 

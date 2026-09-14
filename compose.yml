@@ -1,7 +1,8 @@
 # Worker de vídeo en un contenedor. Lee las claves de .env.local (nunca se copia a la imagen).
-#   docker compose up -d --build     arrancar (o podman compose)
-#   docker compose logs -f worker    ver el log
-#   docker compose down              parar
+#   podman compose up -d --build     arrancar (o docker compose)
+#   podman compose logs -f worker    ver el log
+#   podman compose down              parar
+# Tras un reinicio vuelve solo: podman-restart (systemd de usuario) + loginctl enable-linger.
 services:
   worker:
     build:
