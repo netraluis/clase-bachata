@@ -42,3 +42,8 @@ next-env.d.ts
 
 !.env.example
 .gstack/
+
+
+/desorden
+# material de trabajo del usuario, no se sube
+desorden/

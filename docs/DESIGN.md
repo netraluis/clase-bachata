@@ -42,7 +42,7 @@ Las funciones corren en Frankfurt (`vercel.json`, `regions: ["fra1"]`), en la mi
 
 ## Lo único que no está en shadcn
 
-La línea de tiempo del vídeo: barra de posición, marcas de notas, tramo en bucle con extremos arrastrables y la fila de tiempo. Vive en `src/app/globals.css` como clases `timeline-*`, usa solo tokens del tema (`--color-primary`, `--color-background`) y se consume desde `src/app/v/[id]/player.tsx`. El globo de cada marca es el `Tooltip` de shadcn. El escenario del vídeo es negro a propósito, como cualquier reproductor, y es la única excepción a la regla de colores.
+La línea de tiempo del vídeo: barra de posición, marcas de notas, tramo en bucle y la fila de tiempo, y la tira de fotogramas del modo repetir con sus dos asas (`timeline-trim-handle`). Vive en `src/app/globals.css` como clases `timeline-*`, usa solo tokens del tema (`--color-primary`, `--color-background`) y se consume desde `src/app/v/[id]/player.tsx`. El globo de cada marca es el `Tooltip` de shadcn. El escenario del vídeo es negro a propósito, como cualquier reproductor, y es la única excepción a la regla de colores.
 
 ## Rutas
 
@@ -61,7 +61,7 @@ La línea de tiempo del vídeo: barra de posición, marcas de notas, tramo en bu
 
 - **Notas ancladas** (Frame.io, Vimeo Review): al enfocar el campo de texto el vídeo se pausa; el tiempo de la nota es siempre el del cabezal y se muestra en grande junto al campo. Si mueves el vídeo, la nota se mueve. El botón dice "Guardar en 0:23".
 - **Marcas en la barra** (SoundCloud): un punto por nota; un `Tooltip` controlado muestra tiempo y texto al pasar el ratón en escritorio y, en móvil, al tocar (un toque abre y selecciona, otro cierra). Tocar además pausa y salta ahí.
-- **Modo repetir** (VLC + Anytune + Moises): es un modo explícito con una guía de tres pasos en la que se resalta el paso actual. Al entrar se ocultan las marcas de notas. El primer toque en la barra pone el inicio, el segundo el fin y empieza a repetir. Después los extremos se arrastran o se afinan con ±1 s. "Salir" va a la derecha de la fila de ajustes; también con Esc. Sin botones de "marcar aquí": la barra es el único sitio donde se marca.
+- **Modo repetir** (recorte de vídeo de Fotos en iPhone): al entrar aparece bajo el vídeo una tira de fotogramas (`src/app/v/[id]/filmstrip.tsx`, extraídos en el navegador con un `<video>` oculto y un `<canvas>`) con un marco verde que marca el trozo. Los extremos del marco son dos asas gruesas que se arrastran; fuera del trozo la tira se atenúa y dentro se ve el cabezal. Al entrar, el trozo son 6 s desde el punto actual y ya se repite. Ajuste fino con ±1 s en `ButtonGroup`. Se ocultan las marcas de notas. Se sale con "Salir" o Esc. Ninguna instrucción de "tocar aquí": el trozo siempre está visible y solo se ajusta.
 - **Sin sonido**: un `Toggle` junto a Reproducir silencia el vídeo, para ensayar sin música o en sitios donde no se puede oír. La preferencia se guarda en el dispositivo con `usePersistedBoolean` (`src/hooks/`), un hook sobre `useSyncExternalStore` seguro para hidratación.
 - **Portada**: la miniatura del vídeo hace de `poster`, así se ve el primer fotograma antes de darle a play (como YouTube y Vimeo).
 

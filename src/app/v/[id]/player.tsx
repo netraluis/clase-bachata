@@ -21,6 +21,7 @@ import { Item, ItemGroup, ItemMedia, ItemContent, ItemTitle, ItemDescription, It
 import { Empty, EmptyHeader, EmptyTitle, EmptyDescription } from "@/components/ui/empty";
 import { usePersistedBoolean } from "@/hooks/use-persisted-boolean";
 import { addComment, deleteComment } from "./actions";
+import { Filmstrip } from "./filmstrip";
 
 const SPEEDS = ["0.5", "0.75", "1"] as const;
 type Viewer = { id: string; role: Role; isAdmin: boolean; canWrite: boolean } | null;
@@ -49,7 +50,6 @@ export function Player({
 }) {
   const ref = useRef<HTMLVideoElement>(null);
   const barRef = useRef<HTMLDivElement>(null);
-  const dragging = useRef<"a" | "b" | null>(null);
   const [playing, setPlaying] = useState(false);
   const [now, setNow] = useState(0);
   const [duration, setDuration] = useState(durationProp);
@@ -86,7 +86,6 @@ export function Player({
   }, [a, b]);
 
   const loopOn = a != null && b != null && b > a;
-  const step: "setA" | "setB" | "ready" = a == null ? "setA" : b == null ? "setB" : "ready";
 
   useEffect(() => {
     if (!loopMode) return;
@@ -112,44 +111,27 @@ export function Player({
   }
   function onBarClick(e: React.MouseEvent<HTMLDivElement>) {
     const rect = e.currentTarget.getBoundingClientRect();
-    const t = ((e.clientX - rect.left) / rect.width) * duration;
-    if (loopMode) markAt(t);
-    else seek(t);
-  }
-  // Modo repetir (VLC + Moises): el primer toque marca el inicio, el segundo el
-  // fin y empieza a repetir. Con los dos puestos, un toque mueve el extremo más
-  // cercano. Los extremos también se arrastran (Anytune).
-  function markAt(t: number) {
-    if (a == null || (b == null && t <= a + MIN_GAP)) {
-      setA(t);
-      setB(null);
-      seek(t);
-      return;
-    }
-    if (b == null) {
-      setB(t);
-      seek(a);
-      void ref.current?.play();
-      return;
-    }
-    if (Math.abs(t - a) <= Math.abs(t - b)) setA(Math.min(t, b - MIN_GAP));
-    else setB(Math.max(t, a + MIN_GAP));
+    seek(((e.clientX - rect.left) / rect.width) * duration);
   }
   function enterLoopMode() {
+    const cur = ref.current?.currentTime ?? now;
+    const from = Math.max(0, Math.min(cur, Math.max(0, duration - MIN_GAP)));
+    const to = Math.min(duration, from + 6);
     setLoopMode(true);
-    setA(null);
-    setB(null);
+    setA(from);
+    setB(to);
     setSelected(null);
+    seek(from);
+    void ref.current?.play();
   }
   function exitLoopMode() {
     setLoopMode(false);
     setA(null);
     setB(null);
   }
-  function resetLoop() {
-    setA(null);
-    setB(null);
-    pause();
+  function setRange(na: number, nb: number) {
+    setA(na);
+    setB(nb);
   }
   // Tocar una marca o una nota: pausa y salta a ese momento.
   function pick(c: Comment) {
@@ -163,38 +145,6 @@ export function Player({
     if (which === "a") setA(Math.max(0, Math.min(a + delta, b - MIN_GAP)));
     else setB(Math.max(a + MIN_GAP, Math.min(b + delta, duration)));
   }
-  function fracFromEvent(e: React.PointerEvent): number {
-    const rect = barRef.current?.getBoundingClientRect();
-    if (!rect) return 0;
-    return Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-  }
-  function onHandleDown(which: "a" | "b", e: React.PointerEvent<HTMLButtonElement>) {
-    e.stopPropagation();
-    e.currentTarget.setPointerCapture(e.pointerId);
-    dragging.current = which;
-    pause();
-  }
-  function onHandleMove(e: React.PointerEvent<HTMLButtonElement>) {
-    if (!dragging.current || a == null || b == null) return;
-    const t = fracFromEvent(e) * duration;
-    if (dragging.current === "a") {
-      const v = Math.min(t, b - MIN_GAP);
-      setA(v);
-      seek(v);
-    } else {
-      const v = Math.max(t, a + MIN_GAP);
-      setB(v);
-      seek(Math.max(a, v - 1));
-    }
-  }
-  function onHandleUp(e: React.PointerEvent<HTMLButtonElement>) {
-    if (!dragging.current) return;
-    e.currentTarget.releasePointerCapture(e.pointerId);
-    dragging.current = null;
-    if (a != null) seek(a);
-    void ref.current?.play();
-  }
-
   // Escribir una nota: el vídeo se pausa al enfocar el campo y el tiempo de la
   // nota es siempre el del cabezal. Si mueves el vídeo, la nota se mueve.
   function submitNote(e: React.FormEvent) {
@@ -219,8 +169,6 @@ export function Player({
   const status = [
     muted ? "sin sonido" : null,
     speed !== "1" ? `${speed}×` : null,
-    loopMode && step === "setA" ? "toca la barra donde empieza" : null,
-    loopMode && step === "setB" && a != null ? `inicio ${formatStamp(a)} · toca donde termina` : null,
     loopOn ? `repitiendo ${formatStamp(a)}–${formatStamp(b)}` : null,
   ]
     .filter(Boolean)
@@ -259,14 +207,8 @@ export function Player({
 
         <div ref={barRef} className="timeline" onClick={onBarClick} role="slider" aria-label="Posición" aria-valuemin={0} aria-valuemax={duration} aria-valuenow={now}>
           <div className="timeline-played" style={{ width: `${played}%` }} />
-          {loopMode && a != null && duration > 0 && (
-            <>
-              {b != null && <div className="timeline-range" style={{ left: `${pct(a)}%`, width: `${pct(b) - pct(a)}%` }} />}
-              <button type="button" className="timeline-handle" style={{ left: `${pct(a)}%` }} aria-label={`Inicio del trozo, ${formatStamp(a)}`} onPointerDown={(e) => onHandleDown("a", e)} onPointerMove={onHandleMove} onPointerUp={onHandleUp} onClick={(e) => e.stopPropagation()} />
-              {b != null && (
-                <button type="button" className="timeline-handle" style={{ left: `${pct(b)}%` }} aria-label={`Fin del trozo, ${formatStamp(b)}`} onPointerDown={(e) => onHandleDown("b", e)} onPointerMove={onHandleMove} onPointerUp={onHandleUp} onClick={(e) => e.stopPropagation()} />
-              )}
-            </>
+          {loopOn && duration > 0 && (
+            <div className="timeline-range" style={{ left: `${pct(a)}%`, width: `${pct(b) - pct(a)}%` }} />
           )}
           {duration > 0 &&
             !loopMode &&
@@ -342,52 +284,32 @@ export function Player({
               <Repeat className="size-4" />
               Modo repetir
             </CardTitle>
+            <CardDescription>
+              Arrastra los extremos verdes para elegir el trozo. Se repite solo, como el recorte de vídeo del móvil.
+            </CardDescription>
           </CardHeader>
-          <CardContent>
-            <ItemGroup>
-              {(
-                [
-                  ["setA", "Toca en la barra del vídeo donde empieza el trozo."],
-                  ["setB", "Toca donde termina. Empieza a repetirse solo."],
-                  ["ready", "Si hace falta, arrastra los extremos verdes o afina con los botones."],
-                ] as const
-              ).map(([key, text], i) => (
-                <Item key={key} size="xs" variant={step === key ? "muted" : "default"} aria-current={step === key ? "step" : undefined}>
-                  <ItemMedia>
-                    <Badge variant={step === key ? "default" : "outline"}>{i + 1}</Badge>
-                  </ItemMedia>
-                  <ItemContent>
-                    <ItemDescription className={`line-clamp-none ${step === key ? "text-foreground" : ""}`}>{text}</ItemDescription>
-                  </ItemContent>
-                </Item>
-              ))}
-            </ItemGroup>
-          </CardContent>
-          <CardContent className="flex flex-wrap items-center gap-2">
-            {step === "ready" && (
-              <>
-                <ButtonGroup>
-                  <ButtonGroupText>Inicio</ButtonGroupText>
-                  <Button variant="outline" size="sm" onClick={() => nudge("a", -1)}>−1 s</Button>
-                  <Button variant="outline" size="sm" onClick={() => nudge("a", 1)}>+1 s</Button>
-                </ButtonGroup>
-                <ButtonGroup>
-                  <ButtonGroupText>Fin</ButtonGroupText>
-                  <Button variant="outline" size="sm" onClick={() => nudge("b", -1)}>−1 s</Button>
-                  <Button variant="outline" size="sm" onClick={() => nudge("b", 1)}>+1 s</Button>
-                </ButtonGroup>
-                <Button variant="outline" size="sm" onClick={resetLoop}>Elegir otro trozo</Button>
-              </>
+          <CardContent className="flex flex-col gap-3">
+            {a != null && b != null && (
+              <Filmstrip src={src} duration={duration} a={a} b={b} now={now} onChange={setRange} onSeek={seek} />
             )}
-            {step !== "ready" && a != null && (
-              <span className="text-sm text-muted-foreground">Inicio en {formatStamp(a)}.</span>
-            )}
-            <div className="ml-auto flex items-center gap-2">
-              <Button variant="destructive" size="sm" onClick={exitLoopMode}>
-                <X data-icon="inline-start" />
-                Salir
-              </Button>
-              <Kbd className="hidden sm:inline-flex">Esc</Kbd>
+            <div className="flex flex-wrap items-center gap-2">
+              <ButtonGroup>
+                <ButtonGroupText>Inicio {a != null ? formatStamp(a) : ""}</ButtonGroupText>
+                <Button variant="outline" size="sm" onClick={() => nudge("a", -1)}>−1 s</Button>
+                <Button variant="outline" size="sm" onClick={() => nudge("a", 1)}>+1 s</Button>
+              </ButtonGroup>
+              <ButtonGroup>
+                <ButtonGroupText>Fin {b != null ? formatStamp(b) : ""}</ButtonGroupText>
+                <Button variant="outline" size="sm" onClick={() => nudge("b", -1)}>−1 s</Button>
+                <Button variant="outline" size="sm" onClick={() => nudge("b", 1)}>+1 s</Button>
+              </ButtonGroup>
+              <div className="ml-auto flex items-center gap-2">
+                <Button variant="destructive" size="sm" onClick={exitLoopMode}>
+                  <X data-icon="inline-start" />
+                  Salir
+                </Button>
+                <Kbd className="hidden sm:inline-flex">Esc</Kbd>
+              </div>
             </div>
           </CardContent>
         </Card>
