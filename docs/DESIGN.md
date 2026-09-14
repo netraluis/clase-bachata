@@ -13,8 +13,9 @@ Toda la interfaz se construye con componentes de [shadcn/ui](https://ui.shadcn.c
 3. **Colores y tipografía solo del tema.** `bg-background`, `bg-card`, `text-foreground`, `text-muted-foreground`, `text-primary`, `border`, `font-heading`. No se usan hexadecimales ni la paleta de Tailwind (`zinc-500`, `amber-100`…).
 4. **Un solo acento.** `primary` (verde) es la acción principal y lo que dice quien enseña. `destructive` para borrar y salir. Todo lo demás, neutro.
 5. **Un botón principal por pantalla.** El resto, `variant="outline"` o `ghost`.
-6. **Sin enlaces de "volver".** La cabecera lleva el menú (Clases, Cursos, y Subir y Personas según el rol) y marca la sección actual con `variant="secondary"` y `aria-current="page"`; está en `src/components/header-nav.tsx`.
-7. **Enlaces con aspecto de botón:** `<Button nativeButton={false} render={<Link href="…" />}>`. Base UI exige `nativeButton={false}` cuando no se renderiza un `<button>`.
+6. **Sin enlaces de "volver".** La cabecera lleva el menú (Clases, Cursos, y Subir y Personas según el rol) y marca la sección actual con `variant="secondary"` y `aria-current="page"`. En escritorio va en línea; por debajo de `md` se recoge en un `Sheet` lateral con los enlaces y la sesión. Está en `src/components/header-nav.tsx`.
+7. **Móvil primero.** Toda fila de controles usa `flex-wrap`, y lo que no cabe en 360 px se apila con `flex-col sm:flex-row`. Nada tiene ancho fijo mayor que la pantalla.
+8. **Enlaces con aspecto de botón:** `<Button nativeButton={false} render={<Link href="…" />}>`. Base UI exige `nativeButton={false}` cuando no se renderiza un `<button>`.
 
 ## Comprobación
 

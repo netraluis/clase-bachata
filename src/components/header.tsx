@@ -1,27 +1,31 @@
 import Link from "next/link";
 import { getSessionUser } from "@/lib/auth";
 import { getSchool } from "@/lib/data";
+import { initials } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { HeaderNav } from "@/components/header-nav";
+import { HeaderNav, MobileMenu, type HeaderUser } from "@/components/header-nav";
 
-// Cabecera común: escuela, navegación con la sección actual marcada, y sesión.
+// Cabecera común: escuela, navegación (en línea en escritorio, panel en móvil) y sesión.
 export async function Header() {
-  const [user, school] = await Promise.all([getSessionUser(), getSchool()]);
+  const [session, school] = await Promise.all([getSessionUser(), getSchool()]);
+  const user: HeaderUser = session
+    ? { initials: initials(session.name ?? session.email), role: session.role, canUpload: session.canUpload, isAdmin: session.isAdmin }
+    : null;
 
   return (
     <header className="border-b">
-      <div className="mx-auto flex w-full max-w-4xl flex-wrap items-center gap-2 px-4 py-3 sm:px-6">
-        <Link href="/events" className="font-heading text-lg font-bold">
+      <div className="mx-auto flex w-full max-w-4xl items-center gap-2 px-4 py-3 sm:px-6">
+        <Link href="/events" className="truncate font-heading text-lg font-bold">
           {school?.name ?? "Compás"}
         </Link>
 
         <div className="ml-2">
-          <HeaderNav canUpload={!!user?.canUpload} isAdmin={!!user?.isAdmin} />
+          <HeaderNav user={user} />
         </div>
 
-        <div className="ml-auto flex flex-wrap items-center gap-2">
+        <div className="ml-auto hidden items-center gap-2 md:flex">
           {!user && (
             <Button variant="outline" size="sm" nativeButton={false} render={<Link href="/login" />}>
               Entrar
@@ -30,7 +34,7 @@ export async function Header() {
           {user && (
             <>
               <Avatar className="size-7">
-                <AvatarFallback className="text-xs">{initials(user.name ?? user.email)}</AvatarFallback>
+                <AvatarFallback className="text-xs">{user.initials}</AvatarFallback>
               </Avatar>
               <Badge variant={user.canUpload ? "default" : "secondary"}>{user.role}</Badge>
               <form action="/auth/signout" method="post">
@@ -41,12 +45,11 @@ export async function Header() {
             </>
           )}
         </div>
+
+        <div className="ml-auto md:hidden">
+          <MobileMenu user={user} />
+        </div>
       </div>
     </header>
   );
-}
-
-export function initials(s: string): string {
-  const parts = s.replace(/@.*/, "").split(/[\s._-]+/).filter(Boolean);
-  return ((parts[0]?.[0] ?? "") + (parts[1]?.[0] ?? "")).toUpperCase() || "?";
 }

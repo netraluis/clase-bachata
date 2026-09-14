@@ -370,11 +370,13 @@ export function Player({
             {step !== "ready" && a != null && (
               <span className="text-sm text-muted-foreground">Inicio en {formatStamp(a)}.</span>
             )}
-            <Button variant="destructive" size="sm" className="ml-auto" onClick={exitLoopMode}>
-              <X data-icon="inline-start" />
-              Salir
-            </Button>
-            <Kbd>Esc</Kbd>
+            <div className="ml-auto flex items-center gap-2">
+              <Button variant="destructive" size="sm" onClick={exitLoopMode}>
+                <X data-icon="inline-start" />
+                Salir
+              </Button>
+              <Kbd className="hidden sm:inline-flex">Esc</Kbd>
+            </div>
           </CardContent>
         </Card>
       )}
@@ -440,7 +442,7 @@ export function Player({
         {viewer?.canWrite ? (
           <CardFooter className="border-t">
             <form onSubmit={submitNote} className="flex w-full flex-col gap-3">
-              <div className="flex items-end gap-4">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:gap-4">
                 <div className="shrink-0">
                   <p className="text-xs text-muted-foreground">Nota en</p>
                   <p className="font-heading text-3xl font-bold text-primary tabular-nums">{formatStamp(now)}</p>

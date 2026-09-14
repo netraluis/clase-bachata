@@ -31,3 +31,9 @@ export function formatStamp(t: number): string {
   const s = Math.floor(t - m * 60);
   return `${m}:${String(s).padStart(2, "0")}`;
 }
+
+// Iniciales para el avatar: "Ana Ruiz" → "AR", "ana@x.com" → "A"
+export function initials(s: string): string {
+  const parts = s.replace(/@.*/, "").split(/[\s._-]+/).filter(Boolean);
+  return ((parts[0]?.[0] ?? "") + (parts[1]?.[0] ?? "")).toUpperCase() || "?";
+}
