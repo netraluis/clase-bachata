@@ -4,6 +4,8 @@ import { formatDate, formatSchedule } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
 import { getSessionUser } from "@/lib/auth";
 import { EditSession } from "@/components/edit-session";
+import { EditCourse } from "@/components/edit-course";
+import { WEEKDAYS } from "@/lib/format";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardAction } from "@/components/ui/card";
 import { Empty, EmptyHeader, EmptyTitle, EmptyDescription } from "@/components/ui/empty";
 import { VideoList } from "@/components/video-list";
@@ -28,9 +30,12 @@ export default async function LessonPage({ params }: { params: Promise<{ id: str
   return (
     <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-6 px-4 py-6 sm:px-6">
 
-      <div>
-        <h1 className="text-2xl font-bold">{course.name}</h1>
-        <p className="text-sm text-muted-foreground">{formatSchedule(course) ?? "Sin horario"}</p>
+      <div className="flex items-start gap-2">
+        <div className="min-w-0 flex-1">
+          <h1 className="text-2xl font-bold">{course.name}</h1>
+          <p className="text-sm text-muted-foreground">{formatSchedule(course) ?? "Sin horario"}</p>
+        </div>
+        {user?.isAdmin && <EditCourse course={course} days={WEEKDAYS} />}
       </div>
 
       {sessions.length === 0 && (
@@ -43,7 +48,7 @@ export default async function LessonPage({ params }: { params: Promise<{ id: str
       )}
 
       {sessions.map((s) => (
-        <Card key={s.id}>
+        <Card key={s.id} id={`s-${s.id}`} className="scroll-mt-20">
           <CardHeader>
             {s.title && <CardDescription>{formatDate(s.date)}</CardDescription>}
             <CardTitle>{sessionTitle(s)}</CardTitle>

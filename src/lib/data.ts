@@ -176,6 +176,18 @@ export async function getVideo(
   };
 }
 
+// Listas ligeras para las migas de la cabecera (sin URLs firmadas).
+export async function listCourseNames(): Promise<{ id: string; name: string }[]> {
+  const supabase = await createClient();
+  const { data } = await supabase.from("courses").select("id, name").order("name");
+  return (data ?? []) as { id: string; name: string }[];
+}
+export async function listSessionsOfCourse(courseId: string): Promise<Session[]> {
+  const supabase = await createClient();
+  const { data } = await supabase.from("sessions").select("id, course_id, date, title, notes").eq("course_id", courseId).order("date", { ascending: false });
+  return (data ?? []) as Session[];
+}
+
 // Busca la sesión de un curso en una fecha; la crea si no existe.
 // Requiere rol profe o admin (política RLS de sessions).
 export async function findOrCreateSession(courseId: string, date: string, title?: string | null): Promise<Session> {
