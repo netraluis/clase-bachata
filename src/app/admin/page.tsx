@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Field, FieldLabel } from "@/components/ui/field";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Item, ItemGroup, ItemMedia, ItemContent, ItemTitle, ItemDescription, ItemActions, ItemSeparator } from "@/components/ui/item";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { RoleSelect } from "./role-select";
 import { WeekdaySelect } from "./weekday-select";
@@ -84,26 +84,23 @@ export default async function AdminPage() {
           <CardTitle>Cursos</CardTitle>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Curso</TableHead>
-                <TableHead>Horario</TableHead>
-                <TableHead className="text-right">Clases</TableHead>
-                <TableHead className="text-right">Vídeos</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {courses.map((c) => (
-                <TableRow key={c.id}>
-                  <TableCell className="font-medium">{c.name}</TableCell>
-                  <TableCell className="text-muted-foreground">{formatSchedule(c) ?? "Sin horario"}</TableCell>
-                  <TableCell className="text-right">{c.sessions}</TableCell>
-                  <TableCell className="text-right">{c.videos}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+          <ItemGroup>
+            {courses.map((c, i) => (
+              <div key={c.id}>
+                {i > 0 && <ItemSeparator />}
+                <Item size="sm">
+                  <ItemContent>
+                    <ItemTitle>{c.name}</ItemTitle>
+                    <ItemDescription>{formatSchedule(c) ?? "Sin horario"}</ItemDescription>
+                  </ItemContent>
+                  <ItemActions>
+                    <Badge variant="outline">{c.sessions} {c.sessions === 1 ? "clase" : "clases"}</Badge>
+                    <Badge variant="outline">{c.videos} {c.videos === 1 ? "vídeo" : "vídeos"}</Badge>
+                  </ItemActions>
+                </Item>
+              </div>
+            ))}
+          </ItemGroup>
         </CardContent>
         <CardFooter className="border-t">
           <form action={createCourse} className="flex w-full flex-wrap items-end gap-2">
@@ -130,44 +127,34 @@ export default async function AdminPage() {
           <CardDescription>Quien entra con Google aparece aquí como alumno. Cambia el rol a profe para que pueda subir vídeos y dejar notas.</CardDescription>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Persona</TableHead>
-                <TableHead>Actividad</TableHead>
-                <TableHead className="text-right">Rol</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {people.map((p) => {
-                const n = videosBy.get(p.id) ?? 0;
-                return (
-                  <TableRow key={p.id}>
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        <Avatar className="size-8">
-                          <AvatarFallback className="text-xs">{initials(p.display_name ?? p.email)}</AvatarFallback>
-                        </Avatar>
-                        <div className="min-w-0">
-                          <p className="truncate font-medium">{p.display_name ?? p.email}</p>
-                          <p className="truncate text-xs text-muted-foreground">{p.email}</p>
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {p.role === "alumno" ? `Desde el ${shortDate(p.created_at)}` : `${n} ${n === 1 ? "vídeo" : "vídeos"}`}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        {p.id === user.id && <Badge variant="secondary">tú</Badge>}
-                        <RoleSelect id={p.id} role={p.role} disabled={p.id === user.id} />
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
+          <ItemGroup>
+            {people.map((p, i) => {
+              const n = videosBy.get(p.id) ?? 0;
+              return (
+                <div key={p.id}>
+                  {i > 0 && <ItemSeparator />}
+                  <Item size="sm" className="flex-wrap">
+                    <ItemMedia>
+                      <Avatar className="size-8">
+                        <AvatarFallback className="text-xs">{initials(p.display_name ?? p.email)}</AvatarFallback>
+                      </Avatar>
+                    </ItemMedia>
+                    <ItemContent className="min-w-0">
+                      <ItemTitle className="truncate">{p.display_name ?? p.email}</ItemTitle>
+                      <ItemDescription className="truncate">{p.email}</ItemDescription>
+                      <ItemDescription>
+                        {p.role === "alumno" ? `Desde el ${shortDate(p.created_at)}` : `${n} ${n === 1 ? "vídeo" : "vídeos"}`}
+                      </ItemDescription>
+                    </ItemContent>
+                    <ItemActions className="basis-full justify-end sm:basis-auto">
+                      {p.id === user.id && <Badge variant="secondary">tú</Badge>}
+                      <RoleSelect id={p.id} role={p.role} disabled={p.id === user.id} />
+                    </ItemActions>
+                  </Item>
+                </div>
+              );
+            })}
+          </ItemGroup>
         </CardContent>
       </Card>
     </main>

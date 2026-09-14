@@ -14,7 +14,7 @@ Toda la interfaz se construye con componentes de [shadcn/ui](https://ui.shadcn.c
 4. **Un solo acento.** `primary` (verde) es la acción principal y lo que dice quien enseña. `destructive` para borrar y salir. Todo lo demás, neutro.
 5. **Un botón principal por pantalla.** El resto, `variant="outline"` o `ghost`.
 6. **Sin enlaces de "volver".** La cabecera lleva el menú (Clases, Cursos, y Subir y Personas según el rol) y marca la sección actual con `variant="secondary"` y `aria-current="page"`. En escritorio va en línea; por debajo de `md` se recoge en un `Sheet` lateral con los enlaces y la sesión. Está en `src/components/header-nav.tsx`.
-7. **Móvil primero.** Toda fila de controles usa `flex-wrap`, y lo que no cabe en 360 px se apila con `flex-col sm:flex-row`. Nada tiene ancho fijo mayor que la pantalla.
+7. **Móvil primero.** Toda fila de controles usa `flex-wrap`, y lo que no cabe en 360 px se apila con `flex-col sm:flex-row`. Nada tiene ancho fijo mayor que la pantalla. Las tablas no se usan para listas de gestión: `Table` desborda en móvil; se usa `ItemGroup` + `Item`, con `ItemActions` a línea completa en móvil (`basis-full sm:basis-auto`). Antes de dar por buena una pantalla, se revisa a 360 px con sesión de admin, que es la que más controles muestra.
 8. **Enlaces con aspecto de botón:** `<Button nativeButton={false} render={<Link href="…" />}>`. Base UI exige `nativeButton={false}` cuando no se renderiza un `<button>`.
 
 ## Logo
@@ -30,7 +30,7 @@ Símbolo de Compás: un círculo en `primary` con una persona bailando de perfil
 
 `npm run check:ui` recorre las pantallas y falla si hay un elemento nativo con equivalente en shadcn (`button`, `input`, `select`, `table`, `label`, `ul`/`li`…) o un color fuera del tema. Ejecutarlo antes de cada commit que toque interfaz.
 
-Componentes en uso: Alert, AspectRatio, Avatar, Badge, Button, ButtonGroup, Card, Empty, Field, Input, Item, Kbd, Label, Progress, Select, Separator, Table, Textarea, Toggle, ToggleGroup, Tooltip. Las listas son `ItemGroup` + `Item`; los pares de botones que no deben separarse (±1 s), `ButtonGroup`; los grupos de campo, `Field` + `FieldLabel`; los estados vacíos, `Empty`; los atajos de teclado, `Kbd`.
+Componentes en uso: Alert, AspectRatio, Avatar, Badge, Button, ButtonGroup, Card, Sheet, Skeleton, Spinner, Empty, Field, Input, Item, Kbd, Label, Progress, Select, Separator, Table, Textarea, Toggle, ToggleGroup, Tooltip. Las listas son `ItemGroup` + `Item`; los pares de botones que no deben separarse (±1 s), `ButtonGroup`; los grupos de campo, `Field` + `FieldLabel`; los estados vacíos, `Empty`; los atajos de teclado, `Kbd`.
 
 ## Estados de carga
 

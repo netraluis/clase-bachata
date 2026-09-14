@@ -56,7 +56,7 @@ export function MobileMenu({ user }: { user: HeaderUser }) {
           {items.map((it) => {
             const active = it.match(path);
             return (
-              <SheetClose key={it.href} render={<Button variant={active ? "secondary" : "ghost"} className="justify-start" nativeButton={false} render={<Link href={it.href} aria-current={active ? "page" : undefined} />} />}>
+              <SheetClose key={it.href} nativeButton={false} render={<Button variant={active ? "secondary" : "ghost"} className="justify-start" nativeButton={false} render={<Link href={it.href} aria-current={active ? "page" : undefined} />} />}>
                 {it.label}
               </SheetClose>
             );
@@ -77,7 +77,7 @@ export function MobileMenu({ user }: { user: HeaderUser }) {
               </form>
             </>
           ) : (
-            <SheetClose render={<Button className="w-full" nativeButton={false} render={<Link href="/login" />} />}>Entrar</SheetClose>
+            <SheetClose nativeButton={false} render={<Button className="w-full" nativeButton={false} render={<Link href="/login" />} />}>Entrar</SheetClose>
           )}
         </div>
       </SheetContent>
