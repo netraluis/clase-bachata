@@ -14,6 +14,7 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Kbd } from "@/components/ui/kbd";
+import { Spinner } from "@/components/ui/spinner";
 import { Item, ItemGroup, ItemMedia, ItemContent, ItemTitle, ItemDescription, ItemActions, ItemSeparator } from "@/components/ui/item";
 import { Empty, EmptyHeader, EmptyTitle, EmptyDescription } from "@/components/ui/empty";
 import { addComment, deleteComment } from "./actions";
@@ -443,6 +444,7 @@ export function Player({
               </div>
               <div className="flex flex-wrap items-center gap-2">
                 <Button type="submit" disabled={pending || !draft.trim()}>
+                  {pending && <Spinner data-icon="inline-start" />}
                   Guardar en {formatStamp(now)}
                 </Button>
                 {draft && (

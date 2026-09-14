@@ -139,32 +139,36 @@ export async function getVideo(
   id: string,
 ): Promise<(VideoRow & { videoUrl: string; posterUrl: string | null; session: Session; course: Course; comments: Comment[] }) | null> {
   const supabase = await createClient();
-  const { data: v } = await supabase.from("videos").select(VIDEO_COLS).eq("id", id).maybeSingle();
+  // Una sola ida y vuelta: vídeo + sesión + curso embebidos por sus claves foráneas,
+  // y los comentarios en paralelo. Las URLs firmadas se calculan en local.
+  const [{ data: v }, { data: comments }] = await Promise.all([
+    supabase
+      .from("videos")
+      .select(`${VIDEO_COLS}, sessions!inner(id, course_id, date, title, notes, courses!inner(id, school_id, name, weekday, start_time))`)
+      .eq("id", id)
+      .maybeSingle(),
+    supabase
+      .from("comments")
+      .select("id, video_id, author_id, author_name, author_role, t_seconds, body, created_at")
+      .eq("video_id", id)
+      .order("t_seconds", { ascending: true }),
+  ]);
   if (!v) return null;
-  const video = v as VideoRow;
 
-  const { data: session } = await supabase
-    .from("sessions")
-    .select("id, course_id, date, title, notes")
-    .eq("id", video.session_id)
-    .single();
-  const { data: course } = await supabase
-    .from("courses")
-    .select("id, school_id, name, weekday, start_time")
-    .eq("id", (session as Session).course_id)
-    .single();
-  const { data: comments } = await supabase
-    .from("comments")
-    .select("id, video_id, author_id, author_name, author_role, t_seconds, body, created_at")
-    .eq("video_id", id)
-    .order("t_seconds", { ascending: true });
+  type Joined = VideoRow & { sessions: Session & { courses: Course } };
+  const { sessions: sessionRow, ...video } = v as unknown as Joined;
+  const { courses: course, ...session } = sessionRow;
+  const [videoUrl, posterUrl] = await Promise.all([
+    presignGet(video.r2_key),
+    video.thumb_key ? presignGet(video.thumb_key) : Promise.resolve(null),
+  ]);
 
   return {
     ...video,
-    videoUrl: await presignGet(video.r2_key),
-    posterUrl: video.thumb_key ? await presignGet(video.thumb_key) : null,
-    session: session as Session,
-    course: course as Course,
+    videoUrl,
+    posterUrl,
+    session,
+    course,
     comments: ((comments ?? []) as Comment[]).map((c) => ({ ...c, t_seconds: Number(c.t_seconds) })),
   };
 }

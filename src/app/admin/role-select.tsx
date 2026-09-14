@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import type { Role } from "@/lib/auth";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
+import { Spinner } from "@/components/ui/spinner";
 import { setRole } from "./actions";
 
 export function RoleSelect({ id, role, disabled }: { id: string; role: Role; disabled?: boolean }) {
@@ -37,6 +38,7 @@ export function RoleSelect({ id, role, disabled }: { id: string; role: Role; dis
           <SelectItem value="admin">admin</SelectItem>
         </SelectContent>
       </Select>
+      {pending && <Spinner className="size-4" />}
       {error && <span className="text-xs text-destructive">{error}</span>}
     </div>
   );

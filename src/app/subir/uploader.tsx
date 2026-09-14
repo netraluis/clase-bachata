@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Field, FieldLabel, FieldDescription, FieldGroup } from "@/components/ui/field";
 import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
+import { Spinner } from "@/components/ui/spinner";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 
@@ -234,6 +235,7 @@ export function Uploader({ courses, detectedId }: { courses: CourseOpt[]; detect
       )}
 
       <Button type="submit" disabled={!file || busy} className="w-fit">
+        {busy && <Spinner data-icon="inline-start" />}
         {busy ? "Subiendo…" : "Subir vídeo"}
       </Button>
     </form>
