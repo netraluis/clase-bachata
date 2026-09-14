@@ -15,7 +15,7 @@ Toda la interfaz se construye con componentes de [shadcn/ui](https://ui.shadcn.c
 5. **Un botón principal por pantalla.** El resto, `variant="outline"` o `ghost`.
 6. **Sin enlaces de "volver".** La cabecera lleva el menú (Clases, Cursos, y Subir y Personas según el rol) y marca la sección actual con `variant="secondary"` y `aria-current="page"`. En escritorio va en línea; por debajo de `md` se recoge en un `Sheet` lateral con los enlaces y la sesión. Está en `src/components/header-nav.tsx`.
 7. **Móvil primero.** Toda fila de controles usa `flex-wrap`, y lo que no cabe en 360 px se apila con `flex-col sm:flex-row`. Nada tiene ancho fijo mayor que la pantalla. Las tablas no se usan para listas de gestión: `Table` desborda en móvil; se usa `ItemGroup` + `Item`, con `ItemActions` a línea completa en móvil (`basis-full sm:basis-auto`). Antes de dar por buena una pantalla, se revisa a 360 px con sesión de admin, que es la que más controles muestra.
-8. **Título contextual en la cabecera.** La marca muestra el nombre de la escuela salvo que una página fije otro título con `SetHeaderTitle` (`src/components/header-title.tsx`); el vídeo pone "Curso / Título de la clase dd-mm-aa" y al salir vuelve solo.
+8. **Título contextual en la cabecera.** La marca muestra el nombre de la escuela salvo que una página fije otro título con `SetHeaderTitle` (`src/components/header-title.tsx`); el vídeo pone "Curso / Título de la clase / dd-mm-aa" y al salir vuelve solo.
 9. **Enlaces con aspecto de botón:** `<Button nativeButton={false} render={<Link href="…" />}>`. Base UI exige `nativeButton={false}` cuando no se renderiza un `<button>`.
 
 ## Logo
