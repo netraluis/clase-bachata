@@ -19,6 +19,7 @@ export type VideoRow = {
   session_id: string;
   r2_key: string;
   thumb_key: string | null;
+  filmstrip_key: string | null;
   title: string;
   notes: string | null;
   duration_s: number | null;
@@ -38,7 +39,7 @@ export type Comment = {
   created_at: string;
 };
 
-const VIDEO_COLS = "id, session_id, r2_key, thumb_key, title, notes, duration_s, width, height, status, created_at";
+const VIDEO_COLS = "id, session_id, r2_key, thumb_key, filmstrip_key, title, notes, duration_s, width, height, status, created_at";
 
 export async function getSchool(): Promise<School | null> {
   const supabase = await createClient();
@@ -137,7 +138,7 @@ export function sessionTitle(s: { title: string | null; date: string }): string 
 
 export async function getVideo(
   id: string,
-): Promise<(VideoRow & { videoUrl: string; posterUrl: string | null; session: Session; course: Course; comments: Comment[] }) | null> {
+): Promise<(VideoRow & { videoUrl: string; posterUrl: string | null; filmstripUrl: string | null; session: Session; course: Course; comments: Comment[] }) | null> {
   const supabase = await createClient();
   // Una sola ida y vuelta: vídeo + sesión + curso embebidos por sus claves foráneas,
   // y los comentarios en paralelo. Las URLs firmadas se calculan en local.
@@ -158,15 +159,17 @@ export async function getVideo(
   type Joined = VideoRow & { sessions: Session & { courses: Course } };
   const { sessions: sessionRow, ...video } = v as unknown as Joined;
   const { courses: course, ...session } = sessionRow;
-  const [videoUrl, posterUrl] = await Promise.all([
+  const [videoUrl, posterUrl, filmstripUrl] = await Promise.all([
     presignGet(video.r2_key),
     video.thumb_key ? presignGet(video.thumb_key) : Promise.resolve(null),
+    video.filmstrip_key ? presignGet(video.filmstrip_key) : Promise.resolve(null),
   ]);
 
   return {
     ...video,
     videoUrl,
     posterUrl,
+    filmstripUrl,
     session,
     course,
     comments: ((comments ?? []) as Comment[]).map((c) => ({ ...c, t_seconds: Number(c.t_seconds) })),

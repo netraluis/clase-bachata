@@ -1,19 +1,18 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useRef } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { Spinner } from "@/components/ui/spinner";
 
 // Tira de fotogramas con un marco de selección, como el recorte de vídeo de
 // Fotos en iPhone: siempre visible bajo el vídeo y de su mismo ancho. De
 // entrada el trozo es el vídeo entero; la parte de fuera se atenúa, los
 // extremos son dos asas gruesas que se arrastran y el cabezal se ve dentro.
-// Los fotogramas se extraen en el navegador con un <video> oculto y un <canvas>.
-const FRAMES = 14;
+// La imagen con los fotogramas la genera el worker (worker/worker.mjs) y
+// llega firmada desde R2. Hasta que exista, la tira se muestra lisa.
 const HANDLE_PX = 28;
 
 export function Filmstrip({
-  src,
+  image,
   duration,
   a,
   b,
@@ -21,7 +20,7 @@ export function Filmstrip({
   onChange,
   onSeek,
 }: {
-  src: string;
+  image: string | null;
   duration: number;
   a: number;
   b: number;
@@ -29,65 +28,8 @@ export function Filmstrip({
   onChange: (a: number, b: number) => void;
   onSeek: (t: number) => void;
 }) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
   const stripRef = useRef<HTMLDivElement>(null);
   const dragging = useRef<"a" | "b" | null>(null);
-  const [ready, setReady] = useState(false);
-
-  // Extraer FRAMES fotogramas repartidos por el vídeo.
-  useEffect(() => {
-    if (!duration) return;
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    let cancelled = false;
-    const video = document.createElement("video");
-    video.muted = true;
-    video.playsInline = true;
-    video.preload = "auto";
-    video.src = src;
-
-    const seekTo = (t: number) =>
-      new Promise<void>((resolve) => {
-        const done = () => {
-          video.removeEventListener("seeked", done);
-          resolve();
-        };
-        video.addEventListener("seeked", done);
-        video.currentTime = t;
-      });
-
-    (async () => {
-      await new Promise<void>((resolve) => {
-        if (video.readyState >= 1) resolve();
-        else video.addEventListener("loadedmetadata", () => resolve(), { once: true });
-      });
-      if (cancelled) return;
-      const vw = video.videoWidth || 16;
-      const vh = video.videoHeight || 9;
-      const h = 112; // píxeles reales del canvas (se muestra a la mitad)
-      const w = Math.round((h * vw) / vh);
-      canvas.width = w * FRAMES;
-      canvas.height = h;
-      const ctx = canvas.getContext("2d");
-      if (!ctx) return;
-      for (let i = 0; i < FRAMES; i++) {
-        if (cancelled) return;
-        await seekTo(((i + 0.5) / FRAMES) * duration);
-        try {
-          ctx.drawImage(video, i * w, 0, w, h);
-        } catch {
-          // fotograma no disponible: se deja el hueco
-        }
-      }
-      setReady(true);
-    })();
-
-    return () => {
-      cancelled = true;
-      video.removeAttribute("src");
-      video.load();
-    };
-  }, [src, duration]);
 
   const pct = (t: number) => (duration ? Math.max(0, Math.min(100, (t / duration) * 100)) : 0);
 
@@ -129,11 +71,11 @@ export function Filmstrip({
 
   return (
     <div ref={stripRef} className="relative h-14 w-full touch-none overflow-hidden rounded-lg bg-muted select-none" onClick={(e) => onSeek(tFromEvent(e))}>
-      <canvas ref={canvasRef} className="block h-full w-full object-cover" aria-hidden="true" />
-      {!ready && (
-        <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
-          <Spinner className="size-5" />
-        </div>
+      {image ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={image} alt="" draggable={false} className="block h-full w-full object-cover" />
+      ) : (
+        <div className="absolute inset-0 flex items-center justify-center text-xs text-muted-foreground">Fotogramas en preparación</div>
       )}
       {/* fuera del trozo, atenuado */}
       <div className="pointer-events-none absolute inset-y-0 left-0 bg-background/70" style={{ width: `${pct(a)}%` }} />

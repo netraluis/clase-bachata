@@ -62,7 +62,7 @@ Los iPhone con "Alta eficiencia" graban HEVC (H.265) en un `.mov`. Safari lo rep
 
 1. Ajuste de cámara del profe: Formatos → "Más compatible". Cinco minutos, cero código.
 2. El uploader lee las cajas del MP4 en el navegador, sin decodificar, y rechaza HEVC con un mensaje que explica el ajuste. También saca de ahí duración, dimensiones y rotación, así funciona aunque el navegador del profe no tenga el códec.
-3. El worker transcodifica a H.264 con `-vsync cfr -r 30` (los móviles graban con framerate variable y sin eso el audio se desincroniza) y `+faststart`.
+3. El worker, en un contenedor en el ordenador de casa (`compose.yml`), genera hoy la tira de fotogramas de cada vídeo y transcodificará a H.264 con `-vsync cfr -r 30` (los móviles graban con framerate variable y sin eso el audio se desincroniza) y `+faststart`.
 
 ## Roles
 

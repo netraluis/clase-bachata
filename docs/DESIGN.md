@@ -36,6 +36,10 @@ Componentes en uso: Alert, AspectRatio, Avatar, Badge, Button, ButtonGroup, Card
 
 Cada ruta tiene un `loading.tsx` con `Skeleton` que reproduce la forma de la pantalla (lista de tarjetas, reproductor, formulario). Next lo muestra al instante al navegar mientras el servidor responde. Los botones que esperan al servidor (subir, guardar nota, cambiar rol) muestran `Spinner`. El esqueleto de listas está en `src/components/loading-list.tsx`.
 
+## Worker de vídeo
+
+`worker/worker.mjs` corre en un contenedor (`worker/Dockerfile`, `compose.yml`) en el ordenador de casa, con las claves de `.env.local`. Cada minuto da un latido en `worker_heartbeat`, busca vídeos sin `filmstrip_key`, descarga cada uno de R2, genera con ffmpeg una imagen de 14 fotogramas en fila y la sube a `filmstrips/<id>.jpg`. Solo hace llamadas salientes. Arrancar con `docker compose up -d --build` (o `podman compose`); log con `docker compose logs -f worker`. Es la base sobre la que irá la transcodificación a H.264 de la fase 1.5.
+
 ## Rendimiento
 
 Las funciones corren en Frankfurt (`vercel.json`, `regions: ["fra1"]`), en la misma región que Supabase. Las páginas hacen las consultas en paralelo o embebidas con joins de PostgREST, nunca encadenadas: cada ida y vuelta a la base de datos son decenas de milisegundos, y encadenar cuatro se nota.
@@ -61,7 +65,7 @@ La línea de tiempo del vídeo: barra de posición, marcas de notas, tramo en bu
 
 - **Notas ancladas** (Frame.io, Vimeo Review): al enfocar el campo de texto el vídeo se pausa; el tiempo de la nota es siempre el del cabezal y se muestra en grande junto al campo. Si mueves el vídeo, la nota se mueve. El botón dice "Guardar en 0:23".
 - **Marcas en la barra** (SoundCloud): un punto por nota; un `Tooltip` controlado muestra tiempo y texto al pasar el ratón en escritorio y, en móvil, al tocar (un toque abre y selecciona, otro cierra). Tocar además pausa y salta ahí. Las marcas viven en la barra del vídeo y las asas en la tira, así no se estorban.
-- **Repetir un trozo** (recorte de vídeo de Fotos en iPhone): bajo el vídeo, pegada y de su mismo ancho, hay siempre una tira de fotogramas (`src/app/v/[id]/filmstrip.tsx`, extraídos en el navegador con un `<video>` oculto y un `<canvas>`) con un marco verde que marca el trozo que se repite. De entrada el trozo es el vídeo entero. Los extremos del marco son dos asas gruesas, dentro del marco, que se arrastran; fuera del trozo la tira se atenúa y dentro se ve el cabezal. No hay modo, botones ni instrucciones: el trozo siempre está visible y solo se ajusta. La fila de estado del vídeo dice "repitiendo 0:20–0:26" cuando el trozo no es el vídeo entero.
+- **Repetir un trozo** (recorte de vídeo de Fotos en iPhone): bajo el vídeo, pegada y de su mismo ancho, hay siempre una tira de fotogramas (`src/app/v/[id]/filmstrip.tsx`; la imagen con los 14 fotogramas la genera el worker con ffmpeg y llega firmada desde R2, porque Safari en iOS no deja extraerlos en el navegador) con un marco verde que marca el trozo que se repite. De entrada el trozo es el vídeo entero. Los extremos del marco son dos asas gruesas, dentro del marco, que se arrastran; fuera del trozo la tira se atenúa y dentro se ve el cabezal. No hay modo, botones ni instrucciones: el trozo siempre está visible y solo se ajusta. La fila de estado del vídeo dice "repitiendo 0:20–0:26" cuando el trozo no es el vídeo entero.
 - **Sin sonido**: un `Toggle` junto a Reproducir silencia el vídeo, para ensayar sin música o en sitios donde no se puede oír. La preferencia se guarda en el dispositivo con `usePersistedBoolean` (`src/hooks/`), un hook sobre `useSyncExternalStore` seguro para hidratación.
 - **Portada**: la miniatura del vídeo hace de `poster`, así se ve el primer fotograma antes de darle a play (como YouTube y Vimeo).
 

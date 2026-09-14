@@ -28,6 +28,7 @@ export function Player({
   videoId,
   src,
   poster,
+  filmstrip,
   ratio,
   vertical,
   duration: durationProp,
@@ -38,6 +39,7 @@ export function Player({
   videoId: string;
   src: string;
   poster: string | null;
+  filmstrip: string | null;
   ratio: string;
   vertical: boolean;
   duration: number;
@@ -62,6 +64,9 @@ export function Player({
   const [selected, setSelected] = useState<string | null>(null);
   const [hovered, setHovered] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
+  // Red de seguridad: si el navegador no deja reproducir con nuestro botón,
+  // se muestran los controles nativos del vídeo y el motivo.
+  const [playError, setPlayError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pending, start] = useTransition();
 
@@ -94,8 +99,14 @@ export function Player({
   function togglePlay() {
     const video = ref.current;
     if (!video) return;
-    if (video.paused) void video.play();
-    else video.pause();
+    if (video.paused) {
+      video.play().catch((e: unknown) => setPlayError(e instanceof Error ? `${e.name}: ${e.message}` : "no se pudo reproducir"));
+    } else video.pause();
+  }
+  function onVideoError() {
+    const err = ref.current?.error;
+    const names = ["", "abortado", "error de red", "no se pudo decodificar", "formato no soportado"];
+    setPlayError(err ? `${names[err.code] ?? "error"} (código ${err.code})` : "error desconocido");
   }
   function onBarClick(e: React.MouseEvent<HTMLDivElement>) {
     const rect = e.currentTarget.getBoundingClientRect();
@@ -152,6 +163,8 @@ export function Player({
             ref={ref}
             playsInline
             preload="metadata"
+            controls={playError != null}
+            onError={onVideoError}
             src={src}
             poster={poster ?? undefined}
             muted={muted}
@@ -215,10 +228,18 @@ export function Player({
         </div>
       </div>
 
+      {playError && (
+        <Alert variant="destructive">
+          <AlertDescription>
+            El navegador no ha reproducido el vídeo ({playError}). Prueba con los controles del propio vídeo.
+          </AlertDescription>
+        </Alert>
+      )}
+
       {/* Tira de fotogramas: elige el trozo que se repite arrastrando los extremos */}
       {duration > 0 && (
         <Filmstrip
-          src={src}
+          image={filmstrip}
           duration={duration}
           a={a}
           b={Math.min(b, duration)}

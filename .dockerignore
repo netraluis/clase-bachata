@@ -1,0 +1,9 @@
+node_modules
+.next
+.env*
+docs
+public
+scripts
+src
+supabase
+desorden
