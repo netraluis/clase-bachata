@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { createContext, useContext, useEffect, useState } from "react";
+import { Fragment, createContext, useContext, useEffect, useState } from "react";
 import { Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
 
 // Migas contextuales de la cabecera. Una página puede fijarlas (el vídeo:
@@ -40,7 +40,7 @@ export function HeaderBrandText({ fallback }: { fallback: string }) {
         {crumbs.map((c, i) => {
           const last = i === crumbs.length - 1;
           return (
-            <span key={i} className="contents">
+            <Fragment key={i}>
               {i > 0 && <BreadcrumbSeparator>/</BreadcrumbSeparator>}
               <BreadcrumbItem>
                 {last || !c.href ? (
@@ -51,7 +51,7 @@ export function HeaderBrandText({ fallback }: { fallback: string }) {
                   </BreadcrumbLink>
                 )}
               </BreadcrumbItem>
-            </span>
+            </Fragment>
           );
         })}
       </BreadcrumbList>
