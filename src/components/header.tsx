@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { HeaderNav, MobileMenu, type HeaderUser } from "@/components/header-nav";
+import { Logo } from "@/components/logo";
 
 // Cabecera común: escuela, navegación (en línea en escritorio, panel en móvil) y sesión.
 export async function Header() {
@@ -17,8 +18,9 @@ export async function Header() {
   return (
     <header className="border-b">
       <div className="mx-auto flex w-full max-w-4xl items-center gap-2 px-4 py-3 sm:px-6">
-        <Link href="/events" className="truncate font-heading text-lg font-bold">
-          {school?.name ?? "Compás"}
+        <Link href="/events" className="flex min-w-0 items-center gap-2 font-heading text-lg font-bold">
+          <Logo className="size-7 shrink-0 text-primary" />
+          <span className="truncate">{school?.name ?? "Compás"}</span>
         </Link>
 
         <div className="ml-2">

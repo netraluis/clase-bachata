@@ -17,6 +17,15 @@ Toda la interfaz se construye con componentes de [shadcn/ui](https://ui.shadcn.c
 7. **Móvil primero.** Toda fila de controles usa `flex-wrap`, y lo que no cabe en 360 px se apila con `flex-col sm:flex-row`. Nada tiene ancho fijo mayor que la pantalla.
 8. **Enlaces con aspecto de botón:** `<Button nativeButton={false} render={<Link href="…" />}>`. Base UI exige `nativeButton={false}` cuando no se renderiza un `<button>`.
 
+## Logo
+
+Símbolo de Compás: un círculo en `primary` con el triángulo de reproducir y, debajo, una línea de tiempo con una marca de nota, que es lo que distingue a la app. Está pensado para leerse a 16 px.
+
+- `src/components/logo.tsx`: SVG en línea que hereda `currentColor`; en la cabecera va con `text-primary`, así sigue al tema.
+- `src/app/icon.svg`: favicon (Next lo enlaza solo). `src/app/apple-icon.png`: icono de iOS, 180 px.
+- `public/logo.svg`, `public/icon-192.png`, `public/icon-512.png`: para el manifest (`src/app/manifest.ts`) y para usar fuera de la app.
+- Verde fijo en los ficheros estáticos: `#2f8a4f`, el `primary` del preset en tema claro.
+
 ## Comprobación
 
 `npm run check:ui` recorre las pantallas y falla si hay un elemento nativo con equivalente en shadcn (`button`, `input`, `select`, `table`, `label`, `ul`/`li`…) o un color fuera del tema. Ejecutarlo antes de cada commit que toque interfaz.
