@@ -22,6 +22,14 @@ Toda la interfaz se construye con componentes de [shadcn/ui](https://ui.shadcn.c
 
 Componentes en uso: Alert, AspectRatio, Avatar, Badge, Button, Card, Empty, Field, Input, Item, Kbd, Label, Progress, Select, Separator, Table, Textarea, Toggle, ToggleGroup, Tooltip. Las listas son `ItemGroup` + `Item`; los grupos de campo, `Field` + `FieldLabel`; los estados vacíos, `Empty`; los atajos de teclado, `Kbd`.
 
+## Estados de carga
+
+Cada ruta tiene un `loading.tsx` con `Skeleton` que reproduce la forma de la pantalla (lista de tarjetas, reproductor, formulario). Next lo muestra al instante al navegar mientras el servidor responde. Los botones que esperan al servidor (subir, guardar nota, cambiar rol) muestran `Spinner`. El esqueleto de listas está en `src/components/loading-list.tsx`.
+
+## Rendimiento
+
+Las funciones corren en Frankfurt (`vercel.json`, `regions: ["fra1"]`), en la misma región que Supabase. Las páginas hacen las consultas en paralelo o embebidas con joins de PostgREST, nunca encadenadas: cada ida y vuelta a la base de datos son decenas de milisegundos, y encadenar cuatro se nota.
+
 ## Lo único que no está en shadcn
 
 La línea de tiempo del vídeo: barra de posición, marcas de notas, tramo en bucle con extremos arrastrables y la fila de tiempo. Vive en `src/app/globals.css` como clases `timeline-*`, usa solo tokens del tema (`--color-primary`, `--color-background`) y se consume desde `src/app/v/[id]/player.tsx`. El globo de cada marca es el `Tooltip` de shadcn. El escenario del vídeo es negro a propósito, como cualquier reproductor, y es la única excepción a la regla de colores.
