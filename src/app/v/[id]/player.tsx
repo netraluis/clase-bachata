@@ -280,14 +280,14 @@ export function Player({
             <Slider
               className="mt-3"
               value={[speed]}
-              min={0.25}
+              min={0.5}
               max={1.5}
               step={0.05}
               aria-label="Velocidad de reproducción"
               onValueChange={(v) => setSpeed(Number(Array.isArray(v) ? v[0] : v))}
             />
             <div className="mt-2 flex justify-between text-xs text-muted-foreground">
-              <span>0.25×</span>
+              <span>0.5×</span>
               <span>1×</span>
               <span>1.5×</span>
             </div>
