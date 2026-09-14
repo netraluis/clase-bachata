@@ -30,7 +30,7 @@ Símbolo de Compás: un círculo en `primary` con una persona bailando de perfil
 
 `npm run check:ui` recorre las pantallas y falla si hay un elemento nativo con equivalente en shadcn (`button`, `input`, `select`, `table`, `label`, `ul`/`li`…) o un color fuera del tema. Ejecutarlo antes de cada commit que toque interfaz.
 
-Componentes en uso: Alert, AspectRatio, Avatar, Badge, Button, Card, Empty, Field, Input, Item, Kbd, Label, Progress, Select, Separator, Table, Textarea, Toggle, ToggleGroup, Tooltip. Las listas son `ItemGroup` + `Item`; los grupos de campo, `Field` + `FieldLabel`; los estados vacíos, `Empty`; los atajos de teclado, `Kbd`.
+Componentes en uso: Alert, AspectRatio, Avatar, Badge, Button, ButtonGroup, Card, Empty, Field, Input, Item, Kbd, Label, Progress, Select, Separator, Table, Textarea, Toggle, ToggleGroup, Tooltip. Las listas son `ItemGroup` + `Item`; los pares de botones que no deben separarse (±1 s), `ButtonGroup`; los grupos de campo, `Field` + `FieldLabel`; los estados vacíos, `Empty`; los atajos de teclado, `Kbd`.
 
 ## Estados de carga
 

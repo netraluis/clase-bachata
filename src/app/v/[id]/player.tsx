@@ -15,6 +15,7 @@ import { Toggle } from "@/components/ui/toggle";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Kbd } from "@/components/ui/kbd";
+import { ButtonGroup, ButtonGroupText } from "@/components/ui/button-group";
 import { Spinner } from "@/components/ui/spinner";
 import { Item, ItemGroup, ItemMedia, ItemContent, ItemTitle, ItemDescription, ItemActions, ItemSeparator } from "@/components/ui/item";
 import { Empty, EmptyHeader, EmptyTitle, EmptyDescription } from "@/components/ui/empty";
@@ -356,7 +357,7 @@ export function Player({
                     <Badge variant={step === key ? "default" : "outline"}>{i + 1}</Badge>
                   </ItemMedia>
                   <ItemContent>
-                    <ItemDescription className={step === key ? "text-foreground" : ""}>{text}</ItemDescription>
+                    <ItemDescription className={`line-clamp-none ${step === key ? "text-foreground" : ""}`}>{text}</ItemDescription>
                   </ItemContent>
                 </Item>
               ))}
@@ -365,13 +366,17 @@ export function Player({
           <CardContent className="flex flex-wrap items-center gap-2">
             {step === "ready" && (
               <>
-                <span className="text-sm text-muted-foreground">Inicio</span>
-                <Button variant="outline" size="sm" onClick={() => nudge("a", -1)}>−1 s</Button>
-                <Button variant="outline" size="sm" onClick={() => nudge("a", 1)}>+1 s</Button>
-                <span className="ml-2 text-sm text-muted-foreground">Fin</span>
-                <Button variant="outline" size="sm" onClick={() => nudge("b", -1)}>−1 s</Button>
-                <Button variant="outline" size="sm" onClick={() => nudge("b", 1)}>+1 s</Button>
-                <Button variant="outline" size="sm" className="ml-2" onClick={resetLoop}>Elegir otro trozo</Button>
+                <ButtonGroup>
+                  <ButtonGroupText>Inicio</ButtonGroupText>
+                  <Button variant="outline" size="sm" onClick={() => nudge("a", -1)}>−1 s</Button>
+                  <Button variant="outline" size="sm" onClick={() => nudge("a", 1)}>+1 s</Button>
+                </ButtonGroup>
+                <ButtonGroup>
+                  <ButtonGroupText>Fin</ButtonGroupText>
+                  <Button variant="outline" size="sm" onClick={() => nudge("b", -1)}>−1 s</Button>
+                  <Button variant="outline" size="sm" onClick={() => nudge("b", 1)}>+1 s</Button>
+                </ButtonGroup>
+                <Button variant="outline" size="sm" onClick={resetLoop}>Elegir otro trozo</Button>
               </>
             )}
             {step !== "ready" && a != null && (
