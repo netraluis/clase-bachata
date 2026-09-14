@@ -26,7 +26,7 @@ export default async function VideoPage({ params }: { params: Promise<{ id: stri
             {v.course.name}
           </Badge>
           <span className="text-sm text-muted-foreground">
-            {sessionTitle(v.session)} · {formatDate(v.session.date)}
+            {v.session.title ? `${sessionTitle(v.session)} · ${formatDate(v.session.date)}` : formatDate(v.session.date)}
           </span>
         </div>
         <h1 className="text-2xl font-bold">{v.title}</h1>

@@ -62,6 +62,7 @@ export function Player({
   const [a, setA] = useState<number | null>(null);
   const [b, setB] = useState<number | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
+  const [hovered, setHovered] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, start] = useTransition();
@@ -269,7 +270,13 @@ export function Player({
           {duration > 0 &&
             !loopMode &&
             comments.map((c) => (
-              <Tooltip key={c.id}>
+              <Tooltip
+                key={c.id}
+                // Abierto al pasar el ratón (escritorio) o mientras la nota está
+                // seleccionada (móvil: un toque abre, otro cierra).
+                open={hovered === c.id || selected === c.id}
+                onOpenChange={(open) => setHovered(open ? c.id : null)}
+              >
                 <TooltipTrigger
                   render={
                     <button type="button" className="timeline-pin"

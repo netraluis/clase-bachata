@@ -53,7 +53,7 @@ export default async function EventsPage({
               <Badge variant="outline" render={<Link href={`/lessons/${s.course.id}`} />}>
                 {s.course.name}
               </Badge>
-              <CardDescription>{formatDate(s.date)}</CardDescription>
+              {s.title && <CardDescription>{formatDate(s.date)}</CardDescription>}
             </div>
             <CardTitle>{sessionTitle(s)}</CardTitle>
             {s.notes && <CardDescription>{s.notes}</CardDescription>}

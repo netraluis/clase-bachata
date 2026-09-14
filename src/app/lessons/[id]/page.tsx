@@ -43,7 +43,7 @@ export default async function LessonPage({ params }: { params: Promise<{ id: str
       {sessions.map((s) => (
         <Card key={s.id}>
           <CardHeader>
-            <CardDescription>{formatDate(s.date)}</CardDescription>
+            {s.title && <CardDescription>{formatDate(s.date)}</CardDescription>}
             <CardTitle>{sessionTitle(s)}</CardTitle>
             {s.notes && <CardDescription>{s.notes}</CardDescription>}
           </CardHeader>
