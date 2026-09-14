@@ -37,3 +37,9 @@ export function initials(s: string): string {
   const parts = s.replace(/@.*/, "").split(/[\s._-]+/).filter(Boolean);
   return ((parts[0]?.[0] ?? "") + (parts[1]?.[0] ?? "")).toUpperCase() || "?";
 }
+
+// Fecha corta: 2026-09-10 → "10-09-26"
+export function formatShortDate(iso: string): string {
+  const [y, m, d] = iso.split("-");
+  return `${d}-${m}-${y.slice(2)}`;
+}

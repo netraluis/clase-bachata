@@ -5,6 +5,7 @@ import { cn } from "cn";
 import { ThemeProvider } from "@/components/theme-provider";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Header } from "@/components/header";
+import { HeaderTitleProvider } from "@/components/header-title";
 
 // Fuentes del preset de shadcn: Noto Sans (texto) y Merriweather (títulos).
 const notoSans = Noto_Sans({ subsets: ["latin"], variable: "--font-sans" });
@@ -22,8 +23,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body className="flex min-h-full flex-col antialiased">
         <ThemeProvider>
           <TooltipProvider>
-            <Header />
-            {children}
+            <HeaderTitleProvider>
+              <Header />
+              {children}
+            </HeaderTitleProvider>
           </TooltipProvider>
         </ThemeProvider>
       </body>
