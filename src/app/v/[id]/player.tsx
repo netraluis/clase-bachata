@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState, useTransition } from "react";
-import { Pause, Play, Repeat, Volume2, VolumeX, X } from "lucide-react";
+import { Pause, Play, Volume2, VolumeX, X } from "lucide-react";
 import type { Comment } from "@/lib/data";
 import { formatStamp } from "@/lib/format";
 import type { Role } from "@/lib/auth";
@@ -14,8 +14,6 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Toggle } from "@/components/ui/toggle";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Kbd } from "@/components/ui/kbd";
-import { ButtonGroup, ButtonGroupText } from "@/components/ui/button-group";
 import { Spinner } from "@/components/ui/spinner";
 import { Item, ItemGroup, ItemMedia, ItemContent, ItemTitle, ItemDescription, ItemActions, ItemSeparator } from "@/components/ui/item";
 import { Empty, EmptyHeader, EmptyTitle, EmptyDescription } from "@/components/ui/empty";
@@ -25,7 +23,6 @@ import { Filmstrip } from "./filmstrip";
 
 const SPEEDS = ["0.5", "0.75", "1"] as const;
 type Viewer = { id: string; role: Role; isAdmin: boolean; canWrite: boolean } | null;
-const MIN_GAP = 0.5;
 
 export function Player({
   videoId,
@@ -59,9 +56,9 @@ export function Player({
   useEffect(() => {
     if (ref.current) ref.current.muted = muted;
   }, [muted]);
-  const [loopMode, setLoopMode] = useState(false);
-  const [a, setA] = useState<number | null>(null);
-  const [b, setB] = useState<number | null>(null);
+  // Trozo que se repite: de entrada, el vídeo entero.
+  const [a, setA] = useState<number>(0);
+  const [b, setB] = useState<number>(durationProp);
   const [selected, setSelected] = useState<string | null>(null);
   const [hovered, setHovered] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
@@ -75,7 +72,7 @@ export function Player({
   // Bucle A-B con requestAnimationFrame: timeupdate solo dispara ~4 veces/s.
   useEffect(() => {
     const video = ref.current;
-    if (!video || a == null || b == null || b <= a) return;
+    if (!video || b <= a) return;
     let raf = 0;
     const tick = () => {
       if (video.currentTime >= b || video.currentTime < a - 0.05) video.currentTime = a;
@@ -85,16 +82,7 @@ export function Player({
     return () => cancelAnimationFrame(raf);
   }, [a, b]);
 
-  const loopOn = a != null && b != null && b > a;
-
-  useEffect(() => {
-    if (!loopMode) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") exitLoopMode();
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [loopMode]);
+  const trimmed = a > 0.05 || (duration > 0 && b < duration - 0.05);
 
   function seek(t: number) {
     const video = ref.current;
@@ -113,26 +101,9 @@ export function Player({
     const rect = e.currentTarget.getBoundingClientRect();
     seek(((e.clientX - rect.left) / rect.width) * duration);
   }
-  function enterLoopMode() {
-    const cur = ref.current?.currentTime ?? now;
-    const from = Math.max(0, Math.min(cur, Math.max(0, duration - MIN_GAP)));
-    const to = Math.min(duration, from + 6);
-    setLoopMode(true);
-    setA(from);
-    setB(to);
-    setSelected(null);
-    seek(from);
-    void ref.current?.play();
-  }
-  function exitLoopMode() {
-    setLoopMode(false);
-    setA(null);
-    setB(null);
-  }
-  function setRange(na: number, nb: number) {
-    setA(na);
-    setB(nb);
-  }
+
+
+
   // Tocar una marca o una nota: pausa y salta a ese momento.
   function pick(c: Comment) {
     pause();
@@ -140,11 +111,7 @@ export function Player({
     seek(c.t_seconds);
   }
 
-  function nudge(which: "a" | "b", delta: number) {
-    if (a == null || b == null) return;
-    if (which === "a") setA(Math.max(0, Math.min(a + delta, b - MIN_GAP)));
-    else setB(Math.max(a + MIN_GAP, Math.min(b + delta, duration)));
-  }
+
   // Escribir una nota: el vídeo se pausa al enfocar el campo y el tiempo de la
   // nota es siempre el del cabezal. Si mueves el vídeo, la nota se mueve.
   function submitNote(e: React.FormEvent) {
@@ -169,7 +136,7 @@ export function Player({
   const status = [
     muted ? "sin sonido" : null,
     speed !== "1" ? `${speed}×` : null,
-    loopOn ? `repitiendo ${formatStamp(a)}–${formatStamp(b)}` : null,
+    trimmed ? `repitiendo ${formatStamp(a)}–${formatStamp(b)}` : null,
   ]
     .filter(Boolean)
     .join(", ");
@@ -177,7 +144,8 @@ export function Player({
 
   return (
     <div className="flex flex-col gap-4">
-      {/* Escenario */}
+      {/* Escenario + tira de fotogramas, pegados y del mismo ancho */}
+      <div className="flex flex-col gap-1">
       <div className="relative overflow-hidden rounded-xl bg-black">
         <div className={vertical ? "mx-auto w-full max-w-sm" : "w-full"}>
           <video
@@ -191,7 +159,11 @@ export function Player({
             onPlay={() => setPlaying(true)}
             onPause={() => setPlaying(false)}
             onTimeUpdate={(e) => setNow(e.currentTarget.currentTime)}
-            onLoadedMetadata={(e) => setDuration(e.currentTarget.duration || durationProp)}
+            onLoadedMetadata={(e) => {
+              const d = e.currentTarget.duration || durationProp;
+              setDuration(d);
+              if (b === durationProp || b === 0) setB(d);
+            }}
             className="mx-auto block max-h-[70vh] w-full cursor-pointer bg-black object-contain"
             style={{ aspectRatio: ratio }}
           />
@@ -207,11 +179,7 @@ export function Player({
 
         <div ref={barRef} className="timeline" onClick={onBarClick} role="slider" aria-label="Posición" aria-valuemin={0} aria-valuemax={duration} aria-valuenow={now}>
           <div className="timeline-played" style={{ width: `${played}%` }} />
-          {loopOn && duration > 0 && (
-            <div className="timeline-range" style={{ left: `${pct(a)}%`, width: `${pct(b) - pct(a)}%` }} />
-          )}
           {duration > 0 &&
-            !loopMode &&
             comments.map((c) => (
               <Tooltip
                 key={c.id}
@@ -247,6 +215,23 @@ export function Player({
         </div>
       </div>
 
+      {/* Tira de fotogramas: elige el trozo que se repite arrastrando los extremos */}
+      {duration > 0 && (
+        <Filmstrip
+          src={src}
+          duration={duration}
+          a={a}
+          b={Math.min(b, duration)}
+          now={now}
+          onChange={(na, nb) => {
+            setA(na);
+            setB(nb);
+          }}
+          onSeek={seek}
+        />
+      )}
+      </div>
+
       {/* Controles */}
       <div className="flex flex-wrap items-center gap-3">
         <Button variant="outline" onClick={togglePlay}>
@@ -268,52 +253,6 @@ export function Player({
           </ToggleGroup>
         </div>
       </div>
-
-      {!loopMode ? (
-        <div className="flex flex-wrap items-center gap-3">
-          <Button variant="outline" onClick={enterLoopMode} disabled={!duration}>
-            <Repeat data-icon="inline-start" />
-            Repetir un trozo
-          </Button>
-          <span className="text-sm text-muted-foreground">Para ensayar un paso una y otra vez.</span>
-        </div>
-      ) : (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Repeat className="size-4" />
-              Modo repetir
-            </CardTitle>
-            <CardDescription>
-              Arrastra los extremos verdes para elegir el trozo. Se repite solo, como el recorte de vídeo del móvil.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-3">
-            {a != null && b != null && (
-              <Filmstrip src={src} duration={duration} a={a} b={b} now={now} onChange={setRange} onSeek={seek} />
-            )}
-            <div className="flex flex-wrap items-center gap-2">
-              <ButtonGroup>
-                <ButtonGroupText>Inicio {a != null ? formatStamp(a) : ""}</ButtonGroupText>
-                <Button variant="outline" size="sm" onClick={() => nudge("a", -1)}>−1 s</Button>
-                <Button variant="outline" size="sm" onClick={() => nudge("a", 1)}>+1 s</Button>
-              </ButtonGroup>
-              <ButtonGroup>
-                <ButtonGroupText>Fin {b != null ? formatStamp(b) : ""}</ButtonGroupText>
-                <Button variant="outline" size="sm" onClick={() => nudge("b", -1)}>−1 s</Button>
-                <Button variant="outline" size="sm" onClick={() => nudge("b", 1)}>+1 s</Button>
-              </ButtonGroup>
-              <div className="ml-auto flex items-center gap-2">
-                <Button variant="destructive" size="sm" onClick={exitLoopMode}>
-                  <X data-icon="inline-start" />
-                  Salir
-                </Button>
-                <Kbd className="hidden sm:inline-flex">Esc</Kbd>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
 
       {/* Notas */}
       <Card>

@@ -30,7 +30,7 @@ Símbolo de Compás: un círculo en `primary` con una persona bailando de perfil
 
 `npm run check:ui` recorre las pantallas y falla si hay un elemento nativo con equivalente en shadcn (`button`, `input`, `select`, `table`, `label`, `ul`/`li`…) o un color fuera del tema. Ejecutarlo antes de cada commit que toque interfaz.
 
-Componentes en uso: Alert, AspectRatio, Avatar, Badge, Button, ButtonGroup, Card, Sheet, Skeleton, Spinner, Empty, Field, Input, Item, Kbd, Label, Progress, Select, Separator, Table, Textarea, Toggle, ToggleGroup, Tooltip. Las listas son `ItemGroup` + `Item`; los pares de botones que no deben separarse (±1 s), `ButtonGroup`; los grupos de campo, `Field` + `FieldLabel`; los estados vacíos, `Empty`; los atajos de teclado, `Kbd`.
+Componentes en uso: Alert, AspectRatio, Avatar, Badge, Button, ButtonGroup, Card, Sheet, Skeleton, Spinner, Empty, Field, Input, Item, Kbd, Label, Progress, Select, Separator, Table, Textarea, Toggle, ToggleGroup, Tooltip. Las listas son `ItemGroup` + `Item`;  los grupos de campo, `Field` + `FieldLabel`; los estados vacíos, `Empty`; los atajos de teclado, `Kbd`.
 
 ## Estados de carga
 
@@ -60,8 +60,8 @@ La línea de tiempo del vídeo: barra de posición, marcas de notas, tramo en bu
 ## Patrones de interacción del reproductor
 
 - **Notas ancladas** (Frame.io, Vimeo Review): al enfocar el campo de texto el vídeo se pausa; el tiempo de la nota es siempre el del cabezal y se muestra en grande junto al campo. Si mueves el vídeo, la nota se mueve. El botón dice "Guardar en 0:23".
-- **Marcas en la barra** (SoundCloud): un punto por nota; un `Tooltip` controlado muestra tiempo y texto al pasar el ratón en escritorio y, en móvil, al tocar (un toque abre y selecciona, otro cierra). Tocar además pausa y salta ahí.
-- **Modo repetir** (recorte de vídeo de Fotos en iPhone): al entrar aparece bajo el vídeo una tira de fotogramas (`src/app/v/[id]/filmstrip.tsx`, extraídos en el navegador con un `<video>` oculto y un `<canvas>`) con un marco verde que marca el trozo. Los extremos del marco son dos asas gruesas que se arrastran; fuera del trozo la tira se atenúa y dentro se ve el cabezal. Al entrar, el trozo son 6 s desde el punto actual y ya se repite. Ajuste fino con ±1 s en `ButtonGroup`. Se ocultan las marcas de notas. Se sale con "Salir" o Esc. Ninguna instrucción de "tocar aquí": el trozo siempre está visible y solo se ajusta.
+- **Marcas en la barra** (SoundCloud): un punto por nota; un `Tooltip` controlado muestra tiempo y texto al pasar el ratón en escritorio y, en móvil, al tocar (un toque abre y selecciona, otro cierra). Tocar además pausa y salta ahí. Las marcas viven en la barra del vídeo y las asas en la tira, así no se estorban.
+- **Repetir un trozo** (recorte de vídeo de Fotos en iPhone): bajo el vídeo, pegada y de su mismo ancho, hay siempre una tira de fotogramas (`src/app/v/[id]/filmstrip.tsx`, extraídos en el navegador con un `<video>` oculto y un `<canvas>`) con un marco verde que marca el trozo que se repite. De entrada el trozo es el vídeo entero. Los extremos del marco son dos asas gruesas, dentro del marco, que se arrastran; fuera del trozo la tira se atenúa y dentro se ve el cabezal. No hay modo, botones ni instrucciones: el trozo siempre está visible y solo se ajusta. La fila de estado del vídeo dice "repitiendo 0:20–0:26" cuando el trozo no es el vídeo entero.
 - **Sin sonido**: un `Toggle` junto a Reproducir silencia el vídeo, para ensayar sin música o en sitios donde no se puede oír. La preferencia se guarda en el dispositivo con `usePersistedBoolean` (`src/hooks/`), un hook sobre `useSyncExternalStore` seguro para hidratación.
 - **Portada**: la miniatura del vídeo hace de `poster`, así se ve el primer fotograma antes de darle a play (como YouTube y Vimeo).
 
