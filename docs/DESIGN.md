@@ -19,7 +19,7 @@ Toda la interfaz se construye con componentes de [shadcn/ui](https://ui.shadcn.c
 
 ## Logo
 
-Símbolo de Compás: un círculo en `primary` con dos huellas, los pasos de baile, y debajo una línea de tiempo con una marca de nota, que es lo que distingue a la app. Está pensado para leerse a 16 px.
+Símbolo de Compás: un círculo en `primary` con una persona bailando de perfil en estilo pictograma (brazo arriba, pierna extendida) y, debajo, una línea de tiempo con una marca de nota, que es lo que distingue a la app. Está pensado para leerse a 16 px.
 
 - `src/components/logo.tsx`: SVG en línea que hereda `currentColor`; en la cabecera va con `text-primary`, así sigue al tema.
 - `src/app/icon.svg`: favicon (Next lo enlaza solo). `src/app/apple-icon.png`: icono de iOS, 180 px.
