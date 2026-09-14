@@ -52,6 +52,7 @@ La línea de tiempo del vídeo: barra de posición, marcas de notas, tramo en bu
 - **Notas ancladas** (Frame.io, Vimeo Review): al enfocar el campo de texto el vídeo se pausa; el tiempo de la nota es siempre el del cabezal y se muestra en grande junto al campo. Si mueves el vídeo, la nota se mueve. El botón dice "Guardar en 0:23".
 - **Marcas en la barra** (SoundCloud): un punto por nota; al pasar el ratón o tocar, un `Tooltip` con tiempo, autor y texto; tocar pausa y salta ahí.
 - **Modo repetir** (VLC + Anytune + Moises): es un modo explícito con una guía de tres pasos en la que se resalta el paso actual. Al entrar se ocultan las marcas de notas. El primer toque en la barra pone el inicio, el segundo el fin y empieza a repetir. Después los extremos se arrastran o se afinan con ±1 s. "Salir" va a la derecha de la fila de ajustes; también con Esc. Sin botones de "marcar aquí": la barra es el único sitio donde se marca.
+- **Sin sonido**: un `Toggle` junto a Reproducir silencia el vídeo, para ensayar sin música o en sitios donde no se puede oír. La preferencia se guarda en el dispositivo con `usePersistedBoolean` (`src/hooks/`), un hook sobre `useSyncExternalStore` seguro para hidratación.
 - **Portada**: la miniatura del vídeo hace de `poster`, así se ve el primer fotograma antes de darle a play (como YouTube y Vimeo).
 
 ## Jerarquía de datos

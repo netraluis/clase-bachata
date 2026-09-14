@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState, useTransition } from "react";
-import { Pause, Play, Repeat, X } from "lucide-react";
+import { Pause, Play, Repeat, Volume2, VolumeX, X } from "lucide-react";
 import type { Comment } from "@/lib/data";
 import { formatStamp } from "@/lib/format";
 import type { Role } from "@/lib/auth";
@@ -11,12 +11,14 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { Toggle } from "@/components/ui/toggle";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Kbd } from "@/components/ui/kbd";
 import { Spinner } from "@/components/ui/spinner";
 import { Item, ItemGroup, ItemMedia, ItemContent, ItemTitle, ItemDescription, ItemActions, ItemSeparator } from "@/components/ui/item";
 import { Empty, EmptyHeader, EmptyTitle, EmptyDescription } from "@/components/ui/empty";
+import { usePersistedBoolean } from "@/hooks/use-persisted-boolean";
 import { addComment, deleteComment } from "./actions";
 
 const SPEEDS = ["0.5", "0.75", "1"] as const;
@@ -51,6 +53,11 @@ export function Player({
   const [now, setNow] = useState(0);
   const [duration, setDuration] = useState(durationProp);
   const [speed, setSpeed] = useState<string>("1");
+  // Sin sonido: se recuerda en el dispositivo (para ensayar sin música).
+  const [muted, setMuted] = usePersistedBoolean("player:muted");
+  useEffect(() => {
+    if (ref.current) ref.current.muted = muted;
+  }, [muted]);
   const [loopMode, setLoopMode] = useState(false);
   const [a, setA] = useState<number | null>(null);
   const [b, setB] = useState<number | null>(null);
@@ -208,6 +215,7 @@ export function Player({
 
   const played = duration ? Math.min(100, (now / duration) * 100) : 0;
   const status = [
+    muted ? "sin sonido" : null,
     speed !== "1" ? `${speed}×` : null,
     loopMode && step === "setA" ? "toca la barra donde empieza" : null,
     loopMode && step === "setB" && a != null ? `inicio ${formatStamp(a)} · toca donde termina` : null,
@@ -228,6 +236,7 @@ export function Player({
             preload="metadata"
             src={src}
             poster={poster ?? undefined}
+            muted={muted}
             onClick={togglePlay}
             onPlay={() => setPlaying(true)}
             onPause={() => setPlaying(false)}
@@ -294,6 +303,10 @@ export function Player({
           {playing ? <Pause data-icon="inline-start" /> : <Play data-icon="inline-start" />}
           {playing ? "Pausa" : "Reproducir"}
         </Button>
+        <Toggle variant="outline" pressed={muted} onPressedChange={setMuted} aria-label={muted ? "Activar sonido" : "Quitar sonido"}>
+          {muted ? <VolumeX /> : <Volume2 />}
+          {muted ? "Sin sonido" : "Con sonido"}
+        </Toggle>
         <div className="flex items-center gap-2">
           <span className="text-sm text-muted-foreground">Velocidad</span>
           <ToggleGroup variant="outline" value={[speed]} onValueChange={(v) => v[0] && setSpeed(String(v[0]))}>
