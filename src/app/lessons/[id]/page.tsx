@@ -2,7 +2,9 @@ import { notFound } from "next/navigation";
 import { getCourse, listSessionsWithVideos, sessionTitle } from "@/lib/data";
 import { formatDate, formatSchedule } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+import { getSessionUser } from "@/lib/auth";
+import { EditSession } from "@/components/edit-session";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardAction } from "@/components/ui/card";
 import { Empty, EmptyHeader, EmptyTitle, EmptyDescription } from "@/components/ui/empty";
 import { VideoList } from "@/components/video-list";
 
@@ -14,7 +16,7 @@ export default async function LessonPage({ params }: { params: Promise<{ id: str
   const course = await getCourse(id);
   if (!course) notFound();
 
-  const sessions = await listSessionsWithVideos(id);
+  const [sessions, user] = await Promise.all([listSessionsWithVideos(id), getSessionUser()]);
   const videoIds = sessions.flatMap((s) => s.videos.map((v) => v.id));
   const counts = new Map<string, number>();
   if (videoIds.length) {
@@ -46,6 +48,11 @@ export default async function LessonPage({ params }: { params: Promise<{ id: str
             {s.title && <CardDescription>{formatDate(s.date)}</CardDescription>}
             <CardTitle>{sessionTitle(s)}</CardTitle>
             {s.notes && <CardDescription>{s.notes}</CardDescription>}
+            {user?.canUpload && (
+              <CardAction>
+                <EditSession session={s} />
+              </CardAction>
+            )}
           </CardHeader>
           <CardContent>
             <VideoList videos={s.videos.map((v) => ({ ...v, noteCount: counts.get(v.id) ?? 0 }))} />

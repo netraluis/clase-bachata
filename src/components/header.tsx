@@ -19,10 +19,12 @@ export async function Header() {
   return (
     <header className="border-b">
       <div className="mx-auto flex w-full max-w-4xl items-center gap-2 px-4 py-3 sm:px-6">
-        <Link href="/events" className="flex min-w-0 items-center gap-2 font-heading text-lg font-bold">
-          <Logo className="size-7 shrink-0 text-primary" />
+        <div className="flex min-w-0 items-center gap-2 font-heading text-lg font-bold">
+          <Link href="/events" aria-label="Clases">
+            <Logo className="size-7 shrink-0 text-primary" />
+          </Link>
           <HeaderBrandText fallback={school?.name ?? "Compás"} />
-        </Link>
+        </div>
 
         <div className="ml-2">
           <HeaderNav user={user} />

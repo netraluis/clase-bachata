@@ -1,35 +1,60 @@
 "use client";
 
+import Link from "next/link";
 import { createContext, useContext, useEffect, useState } from "react";
+import { Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
 
-// Título contextual de la cabecera. Una página puede fijarlo (por ejemplo el
-// vídeo: "Curso / Clase dd-mm-aa") y al salir vuelve al nombre de la escuela.
-const Ctx = createContext<{ title: string | null; setTitle: (t: string | null) => void }>({
-  title: null,
-  setTitle: () => {},
+// Migas contextuales de la cabecera. Una página puede fijarlas (el vídeo:
+// Curso / Clase / fecha) y al salir vuelve el nombre de la escuela.
+export type Crumb = { label: string; href?: string };
+
+const Ctx = createContext<{ crumbs: Crumb[] | null; setCrumbs: (c: Crumb[] | null) => void }>({
+  crumbs: null,
+  setCrumbs: () => {},
 });
 
 export function HeaderTitleProvider({ children }: { children: React.ReactNode }) {
-  const [title, setTitle] = useState<string | null>(null);
-  return <Ctx.Provider value={{ title, setTitle }}>{children}</Ctx.Provider>;
+  const [crumbs, setCrumbs] = useState<Crumb[] | null>(null);
+  return <Ctx.Provider value={{ crumbs, setCrumbs }}>{children}</Ctx.Provider>;
 }
 
-export function useHeaderTitle() {
-  return useContext(Ctx).title;
-}
-
-// Se renderiza dentro de la página que quiere un título propio en la cabecera.
-export function SetHeaderTitle({ title }: { title: string }) {
-  const { setTitle } = useContext(Ctx);
+// Se renderiza dentro de la página que quiere migas propias en la cabecera.
+export function SetHeaderCrumbs({ crumbs }: { crumbs: Crumb[] }) {
+  const { setCrumbs } = useContext(Ctx);
+  const key = JSON.stringify(crumbs);
   useEffect(() => {
-    setTitle(title);
-    return () => setTitle(null);
-  }, [title, setTitle]);
+    setCrumbs(JSON.parse(key));
+    return () => setCrumbs(null);
+  }, [key, setCrumbs]);
   return null;
 }
 
-// Marca de la cabecera: el título contextual si lo hay, si no el de la escuela.
+// Marca de la cabecera: migas si las hay, si no el nombre de la escuela.
+// Las migas pueden ocupar dos líneas en móvil para que se lean los títulos enteros.
 export function HeaderBrandText({ fallback }: { fallback: string }) {
-  const title = useHeaderTitle();
-  return <span className="truncate">{title ?? fallback}</span>;
+  const { crumbs } = useContext(Ctx);
+  if (!crumbs) return <span className="truncate">{fallback}</span>;
+  return (
+    <Breadcrumb>
+      <BreadcrumbList className="flex-wrap gap-x-1.5 gap-y-0 text-base font-heading font-bold text-foreground">
+        {crumbs.map((c, i) => {
+          const last = i === crumbs.length - 1;
+          return (
+            <span key={i} className="contents">
+              {i > 0 && <BreadcrumbSeparator>/</BreadcrumbSeparator>}
+              <BreadcrumbItem>
+                {last || !c.href ? (
+                  <BreadcrumbPage className="font-bold">{c.label}</BreadcrumbPage>
+                ) : (
+                  <BreadcrumbLink render={<Link href={c.href} />} className="font-bold">
+                    {c.label}
+                  </BreadcrumbLink>
+                )}
+              </BreadcrumbItem>
+            </span>
+          );
+        })}
+      </BreadcrumbList>
+    </Breadcrumb>
+  );
 }

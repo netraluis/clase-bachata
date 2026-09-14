@@ -15,8 +15,9 @@ Toda la interfaz se construye con componentes de [shadcn/ui](https://ui.shadcn.c
 5. **Un botón principal por pantalla.** El resto, `variant="outline"` o `ghost`.
 6. **Sin enlaces de "volver".** La cabecera lleva el menú (Clases, Cursos, y Subir y Personas según el rol) y marca la sección actual con `variant="secondary"` y `aria-current="page"`. En escritorio va en línea; por debajo de `md` se recoge en un `Sheet` lateral con los enlaces y la sesión. Está en `src/components/header-nav.tsx`.
 7. **Móvil primero.** Toda fila de controles usa `flex-wrap`, y lo que no cabe en 360 px se apila con `flex-col sm:flex-row`. Nada tiene ancho fijo mayor que la pantalla. Las tablas no se usan para listas de gestión: `Table` desborda en móvil; se usa `ItemGroup` + `Item`, con `ItemActions` a línea completa en móvil (`basis-full sm:basis-auto`). Antes de dar por buena una pantalla, se revisa a 360 px con sesión de admin, que es la que más controles muestra.
-8. **Título contextual en la cabecera.** La marca muestra el nombre de la escuela salvo que una página fije otro título con `SetHeaderTitle` (`src/components/header-title.tsx`); el vídeo pone "Curso / Título de la clase / dd-mm-aa" y al salir vuelve solo.
-9. **Enlaces con aspecto de botón:** `<Button nativeButton={false} render={<Link href="…" />}>`. Base UI exige `nativeButton={false}` cuando no se renderiza un `<button>`.
+8. **Migas en la cabecera.** La marca muestra el nombre de la escuela salvo que una página fije migas con `SetHeaderCrumbs` (`src/components/header-title.tsx`), que se pintan con `Breadcrumb`; el vídeo pone "Curso / Título de la clase / dd-mm-aa", con enlaces al curso, y al salir vuelve solo. Las migas pueden ocupar dos líneas en móvil: no se truncan los títulos.
+9. **Edición en sitio.** Cursos y clases se editan con un lápiz que abre un `Dialog` (`src/components/edit-dialog.tsx`): cursos en Personas (solo admin), clases en su tarjeta en Clases y en el curso (profes y admin). Las acciones de servidor están en `src/app/actions/edit.ts` y las políticas RLS las respaldan.
+10. **Enlaces con aspecto de botón:** `<Button nativeButton={false} render={<Link href="…" />}>`. Base UI exige `nativeButton={false}` cuando no se renderiza un `<button>`.
 
 ## Logo
 
@@ -54,12 +55,12 @@ La línea de tiempo del vídeo: barra de posición, marcas de notas, tramo en bu
 | Ruta | Qué muestra | Componentes |
 |---|---|---|
 | `/` | Redirige a `/events` | |
-| `/events` | Todas las clases, de más reciente a menos: curso, título de la clase, fecha y sus vídeos | `Card`, `Badge`, `Empty`, `Alert` |
+| `/events` | Todas las clases, de más reciente a menos: curso, título de la clase, fecha y sus vídeos; lápiz de edición para profes | `Card`, `Badge`, `Empty`, `Alert`, `Dialog` |
 | `/lessons` | Todos los cursos | `Card`, `Empty` |
 | `/lessons/[id]` | Un curso con sus clases y vídeos | `Card`, `Button`, `Empty` |
 | `/v/[id]` | Reproductor, trozo a repetir y notas del profe | `Button`, `Toggle`, `Popover`, `Slider`, `Tooltip`, `Card`, `Textarea`, `Badge`, `Alert` |
 | `/subir` | Subida: curso detectado por horario, fecha, título de la clase, vídeo | `Card`, `Label`, `Input`, `Select`, `Textarea`, `Progress`, `Alert`, `Button` |
-| `/admin` | Escuela, cifras, cursos y personas con rol | `Card`, `Table`, `Input`, `Select`, `Avatar`, `Badge`, `Alert` |
+| `/admin` | Escuela, cifras, cursos (con edición) y personas con rol | `Card`, `Item`, `Input`, `Select`, `Avatar`, `Badge`, `Alert`, `Dialog` |
 | `/login` | Entrar con Google | `Card`, `Button`, `Alert` |
 
 ## Patrones de interacción del reproductor

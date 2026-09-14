@@ -12,6 +12,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Item, ItemGroup, ItemMedia, ItemContent, ItemTitle, ItemDescription, ItemActions, ItemSeparator } from "@/components/ui/item";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { RoleSelect } from "./role-select";
+import { EditCourse } from "@/components/edit-course";
 import { WeekdaySelect } from "./weekday-select";
 import { createCourse, renameSchool } from "./actions";
 
@@ -96,6 +97,7 @@ export default async function AdminPage() {
                   <ItemActions>
                     <Badge variant="outline">{c.sessions} {c.sessions === 1 ? "clase" : "clases"}</Badge>
                     <Badge variant="outline">{c.videos} {c.videos === 1 ? "vídeo" : "vídeos"}</Badge>
+                    <EditCourse course={c} days={WEEKDAYS} />
                   </ItemActions>
                 </Item>
               </div>

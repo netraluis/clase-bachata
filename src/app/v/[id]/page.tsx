@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getVideo, sessionTitle } from "@/lib/data";
 import { formatDate, formatShortDate } from "@/lib/format";
-import { SetHeaderTitle } from "@/components/header-title";
+import { SetHeaderCrumbs } from "@/components/header-title";
 import { getSessionUser } from "@/lib/auth";
 import { Badge } from "@/components/ui/badge";
 import { Player } from "./player";
@@ -20,7 +20,13 @@ export default async function VideoPage({ params }: { params: Promise<{ id: stri
 
   return (
     <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-5 px-4 py-6 sm:px-6">
-      <SetHeaderTitle title={`${v.course.name} / ${v.session.title?.trim() || "Clase"} / ${formatShortDate(v.session.date)}`} />
+      <SetHeaderCrumbs
+        crumbs={[
+          { label: v.course.name, href: `/lessons/${v.course.id}` },
+          { label: v.session.title?.trim() || "Clase", href: `/lessons/${v.course.id}` },
+          { label: formatShortDate(v.session.date) },
+        ]}
+      />
       <div className="flex flex-col gap-2">
         <div className="flex flex-wrap items-center gap-2">
           <Badge variant="outline" render={<Link href={`/lessons/${v.course.id}`} />}>
