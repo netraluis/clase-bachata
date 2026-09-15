@@ -54,20 +54,23 @@ export function EditDialog({
           <Pencil />
         </DialogTrigger>
       )}
-      {/* Si el formulario no cabe (móvil, subida desplegada), se desplaza dentro del diálogo. */}
-      <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto">
-        <form onSubmit={onSubmit} className="flex flex-col gap-5">
-          <DialogHeader>
+      {/* Cabecera y botones fijos; si los campos no caben (móvil, subida
+          desplegada), se desplazan ellos solos dentro del diálogo. */}
+      <DialogContent className="flex max-h-[calc(100dvh-2rem)] flex-col gap-0 p-0">
+        <form onSubmit={onSubmit} className="flex min-h-0 flex-1 flex-col">
+          <DialogHeader className="px-6 pt-6 pb-4">
             <DialogTitle>{title}</DialogTitle>
             {description && <DialogDescription>{description}</DialogDescription>}
           </DialogHeader>
-          {children}
-          {error && (
-            <Alert variant="destructive">
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
-          <DialogFooter>
+          <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto px-6 py-1">
+            {children}
+            {error && (
+              <Alert variant="destructive">
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
+          </div>
+          <DialogFooter className="px-6 pt-4 pb-6">
             <DialogClose render={<Button variant="outline" type="button" />}>Cancelar</DialogClose>
             <Button type="submit" disabled={pending}>
               {pending && <Spinner data-icon="inline-start" />}
