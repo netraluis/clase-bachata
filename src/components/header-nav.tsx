@@ -10,6 +10,14 @@ import { Sheet, SheetTrigger, SheetContent, SheetHeader, SheetTitle, SheetClose 
 
 export type HeaderUser = { initials: string; role: string; canUpload: boolean; isAdmin: boolean } | null;
 
+// Zona de sesión de la cabecera. Sin sesión solo se ve en /login: los alumnos
+// ven los vídeos sin entrar y no hace falta invitarles a hacerlo.
+export function SessionArea({ user, children }: { user: HeaderUser; children: React.ReactNode }) {
+  const path = usePathname();
+  if (!user && path !== "/login") return null;
+  return <>{children}</>;
+}
+
 // Rol de la sesión. Para el admin es el acceso a la administración (/admin),
 // marcado cuando estamos en ella; para el resto, una etiqueta.
 export function RoleLink({ user, inSheet = false }: { user: NonNullable<HeaderUser>; inSheet?: boolean }) {

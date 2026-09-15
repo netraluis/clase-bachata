@@ -3,7 +3,13 @@ import { getSessionUser } from "@/lib/auth";
 import { initials } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { RoleLink, SignOut, MobileMenu, type HeaderUser } from "@/components/header-nav";
+import {
+  RoleLink,
+  SignOut,
+  MobileMenu,
+  SessionArea,
+  type HeaderUser,
+} from "@/components/header-nav";
 import { Logo } from "@/components/logo";
 import { HeaderCrumbs } from "@/components/header-title";
 
@@ -11,7 +17,12 @@ import { HeaderCrumbs } from "@/components/header-title";
 export async function Header() {
   const session = await getSessionUser();
   const user: HeaderUser = session
-    ? { initials: initials(session.name ?? session.email), role: session.role, canUpload: session.canUpload, isAdmin: session.isAdmin }
+    ? {
+        initials: initials(session.name ?? session.email),
+        role: session.role,
+        canUpload: session.canUpload,
+        isAdmin: session.isAdmin,
+      }
     : null;
 
   return (
@@ -24,26 +35,35 @@ export async function Header() {
           <HeaderCrumbs />
         </div>
 
-        <div className="ml-auto hidden items-center gap-2 md:flex">
-          {!user && (
-            <Button variant="outline" size="sm" nativeButton={false} render={<Link href="/login" />}>
-              Entrar
-            </Button>
-          )}
-          {user && (
-            <>
-              <Avatar className="size-7">
-                <AvatarFallback className="text-xs">{user.initials}</AvatarFallback>
-              </Avatar>
-              <RoleLink user={user} />
-              <SignOut />
-            </>
-          )}
-        </div>
+        <SessionArea user={user}>
+          <div className="ml-auto hidden items-center gap-2 md:flex">
+            {!user && (
+              <Button
+                variant="outline"
+                size="sm"
+                nativeButton={false}
+                render={<Link href="/login" />}
+              >
+                Entrar
+              </Button>
+            )}
+            {user && (
+              <>
+                <Avatar className="size-7">
+                  <AvatarFallback className="text-xs">
+                    {user.initials}
+                  </AvatarFallback>
+                </Avatar>
+                <RoleLink user={user} />
+                <SignOut />
+              </>
+            )}
+          </div>
 
-        <div className="ml-auto md:hidden">
-          <MobileMenu user={user} />
-        </div>
+          <div className="ml-auto md:hidden">
+            <MobileMenu user={user} />
+          </div>
+        </SessionArea>
       </div>
     </header>
   );
