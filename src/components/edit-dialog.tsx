@@ -35,6 +35,7 @@ export function EditDialog({
 
   function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    e.stopPropagation(); // un diálogo dentro de otro no debe enviar también el de fuera
     const form = new FormData(e.currentTarget);
     setError(null);
     start(async () => {

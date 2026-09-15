@@ -77,7 +77,7 @@ export default async function EventsPage({
             {s.notes && <CardDescription>{s.notes}</CardDescription>}
             {user?.canUpload && (
               <CardAction className="flex items-center">
-                <EditSession session={s} slots={s.course.slots} videos={s.videos.map((v) => ({ id: v.id, title: v.title }))} canDelete={user.isAdmin} />
+                <EditSession session={s} slots={s.course.slots} course={{ id: s.course.id, name: s.course.name }} videos={s.videos.map((v) => ({ id: v.id, title: v.title, notes: v.notes }))} canDelete={user.isAdmin} />
                 {user.isAdmin && (
                   <DeleteButton
                     title={`Borrar la clase «${sessionTitle(s)}»`}

@@ -1,8 +1,7 @@
 "use client";
 
-import Link from "next/link";
 import { useState } from "react";
-import { Plus, Upload } from "lucide-react";
+import { Plus } from "lucide-react";
 import { EditDialog } from "@/components/edit-dialog";
 import { Button } from "@/components/ui/button";
 import { Field, FieldLabel, FieldGroup } from "@/components/ui/field";
@@ -14,6 +13,8 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { Item, ItemGroup, ItemContent, ItemTitle, ItemActions, ItemSeparator } from "@/components/ui/item";
 import { DeleteButton } from "@/components/delete-button";
+import { EditVideo, UploadDialog } from "@/components/edit-video";
+import type { LockedSession } from "@/app/subir/uploader";
 import { updateSession, createSession, deleteVideo } from "@/app/actions/edit";
 import { endsNextDay, nextDay, slotOccurrences, type SlotLike } from "@/lib/schedule";
 import { formatDate, formatDayShort, formatTimeRange } from "@/lib/format";
@@ -160,9 +161,11 @@ function SessionFields({ id, session, slots }: { id: string; session: SessionFor
   );
 }
 
-// Vídeos de la clase: lista con papelera (solo admin, canDelete) y enlace
-// a subir uno nuevo a esta clase (/subir?session=).
-function SessionVideos({ sessionId, videos, canDelete }: { sessionId: string; videos: { id: string; title: string }[]; canDelete: boolean }) {
+type VideoRowInfo = { id: string; title: string; notes: string | null };
+
+// Vídeos de la clase: cada uno con lápiz (título y nota) y papelera (solo
+// admin, canDelete), y un diálogo para subir uno nuevo a esta clase.
+function SessionVideos({ session, videos, canDelete }: { session: LockedSession; videos: VideoRowInfo[]; canDelete: boolean }) {
   return (
     <div className="flex flex-col gap-2">
       <FieldLabel>Vídeos de la clase</FieldLabel>
@@ -175,43 +178,51 @@ function SessionVideos({ sessionId, videos, canDelete }: { sessionId: string; vi
                 <ItemContent>
                   <ItemTitle className="truncate">{v.title}</ItemTitle>
                 </ItemContent>
-                {canDelete && (
-                  <ItemActions>
+                <ItemActions>
+                  <EditVideo video={v} />
+                  {canDelete && (
                     <DeleteButton
                       title={`Borrar el vídeo «${v.title}»`}
                       description="Se borra el vídeo de R2 con sus notas. Esta acción no se puede deshacer."
                       action={deleteVideo.bind(null, v.id)}
                     />
-                  </ItemActions>
-                )}
+                  )}
+                </ItemActions>
               </Item>
             </div>
           ))}
         </ItemGroup>
       )}
-      <Button variant="outline" size="sm" className="self-start" nativeButton={false} render={<Link href={`/subir?session=${sessionId}`} />}>
-        <Upload data-icon="inline-start" />
-        Subir vídeo
-      </Button>
+      <UploadDialog session={session} />
     </div>
   );
 }
 
 export function EditSession({
   session,
+  course,
   slots,
   videos = [],
   canDelete = false,
 }: {
   session: SessionForm & { id: string };
+  course: { id: string; name: string };
   slots: SlotLike[];
-  videos?: { id: string; title: string }[];
+  videos?: VideoRowInfo[];
   canDelete?: boolean;
 }) {
+  const locked: LockedSession = {
+    id: session.id,
+    courseId: course.id,
+    courseName: course.name,
+    date: session.date,
+    title: session.title,
+    label: session.title?.trim() || `Clase del ${formatDate(session.date)}`,
+  };
   return (
     <EditDialog title="Editar clase" description="Título, fecha, hora y nota de la clase." action={(f) => updateSession(session.id, f)}>
       <SessionFields id={session.id} session={session} slots={slots} />
-      <SessionVideos sessionId={session.id} videos={videos} canDelete={canDelete} />
+      <SessionVideos session={locked} videos={videos} canDelete={canDelete} />
     </EditDialog>
   );
 }

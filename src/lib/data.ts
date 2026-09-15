@@ -210,15 +210,6 @@ export async function listSessionsOfCourse(courseId: string): Promise<Session[]>
   return (data ?? []) as Session[];
 }
 
-// Una clase con su curso (para subir vídeos a una clase concreta).
-export async function getSession(id: string): Promise<(Session & { course: Course }) | null> {
-  const supabase = await createClient();
-  const { data } = await supabase.from("sessions").select(`${SESSION_COLS}, courses!inner(${COURSE_COLS})`).eq("id", id).maybeSingle();
-  if (!data) return null;
-  const { courses: course, ...session } = data as unknown as Session & { courses: Course };
-  return { ...session, course };
-}
-
 // Busca la sesión de un curso en una fecha; la crea si no existe.
 // Requiere rol profe o admin (política RLS de sessions).
 export async function findOrCreateSession(courseId: string, date: string, title?: string | null): Promise<Session> {

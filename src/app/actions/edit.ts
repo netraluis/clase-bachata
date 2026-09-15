@@ -96,6 +96,21 @@ export async function updateSession(id: string, form: FormData): Promise<Result>
   return { ok: true };
 }
 
+// Vídeo: título y nota general. Admin o el profe que lo subió (política RLS).
+export async function updateVideo(id: string, form: FormData): Promise<Result> {
+  const user = await getSessionUser();
+  if (!user?.canUpload) return { ok: false, error: "Solo los profes pueden editar vídeos" };
+  const title = String(form.get("title") ?? "").trim().slice(0, 120);
+  const notes = String(form.get("notes") ?? "").trim().slice(0, 2000);
+  if (!title) return { ok: false, error: "El vídeo necesita un título" };
+  const supabase = await createClient();
+  const { data, error } = await supabase.from("videos").update({ title, notes: notes || null }).eq("id", id).select("id");
+  if (error) return { ok: false, error: error.message };
+  if (!data?.length) return { ok: false, error: "Solo el admin o quien subió el vídeo puede editarlo" };
+  revalidatePath("/", "layout");
+  return { ok: true };
+}
+
 // Borrados: solo admin. Los vídeos se quitan primero de R2 y después de la BBDD.
 const VIDEO_KEYS = "id, r2_key, thumb_key, filmstrip_key";
 type VideoKeys = { id: string; r2_key: string; thumb_key: string | null; filmstrip_key: string | null };

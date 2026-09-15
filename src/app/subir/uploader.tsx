@@ -17,9 +17,19 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@
 type Phase = "idle" | "preparando" | "subiendo" | "guardando" | "hecho";
 type CourseOpt = { id: string; name: string; weekdays: number[] };
 // Clase ya elegida (desde "Editar clase"): no se pregunta curso, fecha ni título de clase.
-type LockedSession = { id: string; courseId: string; courseName: string; date: string; title: string | null; label: string };
+export type LockedSession = { id: string; courseId: string; courseName: string; date: string; title: string | null; label: string };
 
-export function Uploader({ courses, detectedId, session = null }: { courses: CourseOpt[]; detectedId: string | null; session?: LockedSession | null }) {
+export function Uploader({
+  courses,
+  detectedId,
+  session = null,
+  onDone,
+}: {
+  courses: CourseOpt[];
+  detectedId: string | null;
+  session?: LockedSession | null;
+  onDone?: () => void; // dentro de un diálogo: en vez de navegar, avisa al cerrar
+}) {
   const router = useRouter();
   const initialId = session?.courseId ?? detectedId ?? courses[0]?.id ?? "";
   const [courseId, setCourseId] = useState<string>(initialId);
@@ -74,6 +84,7 @@ export function Uploader({ courses, detectedId, session = null }: { courses: Cou
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
+    e.stopPropagation(); // dentro del diálogo de la clase no debe enviar su formulario
     if (!file || !courseId) return;
     setError(null);
     setProgress(0);
@@ -132,7 +143,12 @@ export function Uploader({ courses, detectedId, session = null }: { courses: Cou
       if (!save.ok) throw new Error((await save.json()).error ?? "No se pudo guardar el vídeo");
 
       setPhase("hecho");
-      router.push(session ? `/lessons/${session.courseId}#s-${session.id}` : "/events");
+      if (onDone) {
+        router.refresh();
+        onDone();
+        return;
+      }
+      router.push("/events");
       router.refresh();
     } catch (err) {
       setPhase("idle");
@@ -144,12 +160,14 @@ export function Uploader({ courses, detectedId, session = null }: { courses: Cou
 
   return (
     <form onSubmit={submit} className="flex w-full flex-col gap-5">
-      <div>
-        <h1 className="text-2xl font-bold">Subir a {session ? session.label : (course?.name ?? "…")}</h1>
-        <p className="text-sm text-muted-foreground">
-          {session ? session.courseName : courseId === detectedId ? "Detectado por el horario de hoy" : "Elige el curso y la fecha de la clase"}
-        </p>
-      </div>
+      {!onDone && (
+        <div>
+          <h1 className="text-2xl font-bold">Subir a {session ? session.label : (course?.name ?? "…")}</h1>
+          <p className="text-sm text-muted-foreground">
+            {session ? session.courseName : courseId === detectedId ? "Detectado por el horario de hoy" : "Elige el curso y la fecha de la clase"}
+          </p>
+        </div>
+      )}
 
       <FieldGroup>
       {!session && courses.length > 1 && (

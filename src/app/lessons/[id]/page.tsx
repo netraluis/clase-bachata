@@ -79,7 +79,7 @@ export default async function LessonPage({ params }: { params: Promise<{ id: str
             {s.notes && <CardDescription>{s.notes}</CardDescription>}
             {user?.canUpload && (
               <CardAction className="flex items-center">
-                <EditSession session={s} slots={course.slots} videos={s.videos.map((v) => ({ id: v.id, title: v.title }))} canDelete={user.isAdmin} />
+                <EditSession session={s} slots={course.slots} course={{ id: course.id, name: course.name }} videos={s.videos.map((v) => ({ id: v.id, title: v.title, notes: v.notes }))} canDelete={user.isAdmin} />
                 {user.isAdmin && (
                   <DeleteButton
                     title={`Borrar la clase «${sessionTitle(s)}»`}
