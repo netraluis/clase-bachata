@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState, useTransition } from "react";
-import { FastForward, Pause, Play, Volume2, VolumeX, X } from "lucide-react";
+import { FastForward, MessageSquareText, Pause, Play, Volume2, VolumeX, Wrench, X } from "lucide-react";
 import type { Comment } from "@/lib/data";
 import { formatStamp } from "@/lib/format";
 import type { Role } from "@/lib/auth";
@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Toggle } from "@/components/ui/toggle";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { Slider } from "@/components/ui/slider";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
@@ -23,6 +24,9 @@ import { addComment, deleteComment } from "./actions";
 import { Filmstrip } from "./filmstrip";
 
 type Viewer = { id: string; role: Role; isAdmin: boolean; canWrite: boolean } | null;
+// Panel bajo el vídeo, elegido desde la barra flotante: herramientas (bucle,
+// pausa, velocidad, sonido) o notas.
+type Panel = "tools" | "notes";
 
 function fmtSpeed(v: number): string {
   return String(Math.round(v * 100) / 100);
@@ -57,6 +61,7 @@ export function Player({
   const [now, setNow] = useState(0);
   const [duration, setDuration] = useState(durationProp);
   const [speed, setSpeed] = useState<number>(1);
+  const [panel, setPanel] = useState<Panel>("tools");
   // Sin sonido: se recuerda en el dispositivo (para ensayar sin música).
   const [muted, setMuted] = usePersistedBoolean("player:muted");
   useEffect(() => {
@@ -158,7 +163,7 @@ export function Player({
   const pct = (t: number) => Math.min(100, (t / duration) * 100);
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4 pb-20">
       {/* Escenario + tira de fotogramas, pegados y del mismo ancho */}
       <div className="flex flex-col gap-1">
       <div className="relative overflow-hidden rounded-xl bg-black">
@@ -181,7 +186,8 @@ export function Player({
               setDuration(d);
               if (b === durationProp || b === 0) setB(d);
             }}
-            className="mx-auto block max-h-[70vh] w-full cursor-pointer bg-black object-contain"
+            // Con las notas abiertas el vídeo cede alto para que se vean debajo (móvil).
+            className={`mx-auto block w-full cursor-pointer bg-black object-contain ${panel === "notes" ? "max-h-[42vh] md:max-h-[70vh]" : "max-h-[70vh]"}`}
             style={{ aspectRatio: ratio }}
           />
         </div>
@@ -241,7 +247,7 @@ export function Player({
       )}
 
       {/* Tira de fotogramas: elige el trozo que se repite arrastrando los extremos */}
-      {duration > 0 && (
+      {panel === "tools" && duration > 0 && (
         <Filmstrip
           image={filmstrip}
           duration={duration}
@@ -258,6 +264,7 @@ export function Player({
       </div>
 
       {/* Controles: solo símbolos */}
+      {panel === "tools" && (
       <div className="flex items-center gap-2">
         <Button variant="outline" size="icon" onClick={togglePlay} aria-label={playing ? "Pausa" : "Reproducir"}>
           {playing ? <Pause /> : <Play />}
@@ -294,8 +301,10 @@ export function Player({
           </PopoverContent>
         </Popover>
       </div>
+      )}
 
       {/* Notas */}
+      {panel === "notes" && (
       <Card>
         <CardHeader>
           <CardTitle>Notas del profe</CardTitle>
@@ -398,6 +407,28 @@ export function Player({
           )
         )}
       </Card>
+      )}
+
+      {/* Barra flotante: herramientas o notas (patrón de Vimeo en móvil) */}
+      <div className="pointer-events-none fixed inset-x-0 bottom-4 z-40 flex justify-center">
+        <ToggleGroup
+          value={[panel]}
+          onValueChange={(v) => {
+            const next = (v as Panel[])[0];
+            if (next) setPanel(next);
+          }}
+          aria-label="Panel"
+          className="pointer-events-auto rounded-4xl bg-popover p-1 shadow-2xl ring-1 ring-foreground/10"
+        >
+          <ToggleGroupItem value="tools" aria-label="Herramientas">
+            <Wrench />
+          </ToggleGroupItem>
+          <ToggleGroupItem value="notes" aria-label="Notas">
+            <MessageSquareText />
+            {comments.length > 0 && <span className="tabular-nums">{comments.length}</span>}
+          </ToggleGroupItem>
+        </ToggleGroup>
+      </div>
     </div>
   );
 }
