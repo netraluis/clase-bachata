@@ -13,8 +13,8 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { Item, ItemGroup, ItemContent, ItemTitle, ItemActions, ItemSeparator } from "@/components/ui/item";
 import { DeleteButton } from "@/components/delete-button";
-import { EditVideo, UploadDialog } from "@/components/edit-video";
-import type { LockedSession } from "@/app/subir/uploader";
+import { EditVideo, UploadInline } from "@/components/edit-video";
+import type { LockedSession } from "@/components/uploader";
 import { updateSession, createSession, deleteVideo } from "@/app/actions/edit";
 import { endsNextDay, nextDay, slotOccurrences, type SlotLike } from "@/lib/schedule";
 import { formatDate, formatDayShort, formatTimeRange } from "@/lib/format";
@@ -164,7 +164,7 @@ function SessionFields({ id, session, slots }: { id: string; session: SessionFor
 type VideoRowInfo = { id: string; title: string; notes: string | null };
 
 // Vídeos de la clase: cada uno con lápiz (título y nota) y papelera (solo
-// admin, canDelete), y un diálogo para subir uno nuevo a esta clase.
+// admin, canDelete), y un desplegable para subir uno nuevo a esta clase.
 function SessionVideos({ session, videos, canDelete }: { session: LockedSession; videos: VideoRowInfo[]; canDelete: boolean }) {
   return (
     <div className="flex flex-col gap-2">
@@ -193,7 +193,7 @@ function SessionVideos({ session, videos, canDelete }: { session: LockedSession;
           ))}
         </ItemGroup>
       )}
-      <UploadDialog session={session} />
+      <UploadInline session={session} />
     </div>
   );
 }

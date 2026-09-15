@@ -72,11 +72,3 @@ export function putWithProgress(
     xhr.send(body);
   });
 }
-
-// Última ocurrencia de alguno de los días de la semana dados (incluido hoy). Sin días: hoy.
-export function lastWeekday(weekdays: number[], from = new Date()): string {
-  const d = new Date(from);
-  if (weekdays.length > 0) while (!weekdays.includes(d.getDay())) d.setDate(d.getDate() - 1);
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-}

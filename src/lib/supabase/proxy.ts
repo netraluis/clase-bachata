@@ -3,7 +3,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { requestOrigin } from "@/lib/request-origin";
 
 // Refresca el token de sesión en cada request. La vista de alumnos es
-// pública: solo exigen sesión subir, administrar y la API.
+// pública: solo exigen sesión administrar y la API.
 // Se llama desde src/proxy.ts.
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
@@ -36,7 +36,6 @@ export async function updateSession(request: NextRequest) {
 
   const { pathname } = request.nextUrl;
   const isProtected =
-    pathname.startsWith("/subir") ||
     pathname.startsWith("/admin") ||
     pathname.startsWith("/api");
 
