@@ -54,7 +54,8 @@ export function EditDialog({
           <Pencil />
         </DialogTrigger>
       )}
-      <DialogContent>
+      {/* Si el formulario no cabe (móvil, subida desplegada), se desplaza dentro del diálogo. */}
+      <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto">
         <form onSubmit={onSubmit} className="flex flex-col gap-5">
           <DialogHeader>
             <DialogTitle>{title}</DialogTitle>
