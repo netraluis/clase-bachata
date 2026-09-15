@@ -9,20 +9,25 @@ import { Spinner } from "@/components/ui/spinner";
 
 type Result = { ok: true } | { ok: false; error: string };
 
-// Botón de lápiz que abre un diálogo con un formulario. `children` son los
-// campos; `action` recibe el FormData y devuelve ok o el error.
+// Botón (lápiz por defecto, o el `trigger` dado) que abre un diálogo con un
+// formulario. `children` son los campos; `action` recibe el FormData y
+// devuelve ok o el error.
 export function EditDialog({
   title,
   description,
   action,
   children,
   triggerLabel = "Editar",
+  trigger,
+  submitLabel = "Guardar",
 }: {
   title: string;
   description?: string;
   action: (form: FormData) => Promise<Result>;
   children: React.ReactNode;
   triggerLabel?: string;
+  trigger?: React.ReactElement;
+  submitLabel?: string;
 }) {
   const [open, setOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -41,9 +46,13 @@ export function EditDialog({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger render={<Button variant="ghost" size="icon" aria-label={triggerLabel} />}>
-        <Pencil />
-      </DialogTrigger>
+      {trigger ? (
+        <DialogTrigger render={trigger} />
+      ) : (
+        <DialogTrigger render={<Button variant="ghost" size="icon" aria-label={triggerLabel} />}>
+          <Pencil />
+        </DialogTrigger>
+      )}
       <DialogContent>
         <form onSubmit={onSubmit} className="flex flex-col gap-5">
           <DialogHeader>
@@ -60,7 +69,7 @@ export function EditDialog({
             <DialogClose render={<Button variant="outline" type="button" />}>Cancelar</DialogClose>
             <Button type="submit" disabled={pending}>
               {pending && <Spinner data-icon="inline-start" />}
-              Guardar
+              {submitLabel}
             </Button>
           </DialogFooter>
         </form>

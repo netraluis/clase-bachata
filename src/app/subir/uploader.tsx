@@ -6,6 +6,7 @@ import { readVideoMeta, captureThumbnail, putWithProgress, lastWeekday } from "@
 import { probeMp4, isHevc, isH264, type Mp4Info } from "@/lib/mp4-probe";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { DatePicker } from "@/components/date-picker";
 import { Field, FieldLabel, FieldDescription, FieldGroup } from "@/components/ui/field";
 import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
@@ -14,18 +15,20 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 
 type Phase = "idle" | "preparando" | "subiendo" | "guardando" | "hecho";
-type CourseOpt = { id: string; name: string; weekday: number | null };
+type CourseOpt = { id: string; name: string; weekdays: number[] };
+// Clase ya elegida (desde "Editar clase"): no se pregunta curso, fecha ni título de clase.
+type LockedSession = { id: string; courseId: string; courseName: string; date: string; title: string | null; label: string };
 
-export function Uploader({ courses, detectedId }: { courses: CourseOpt[]; detectedId: string | null }) {
+export function Uploader({ courses, detectedId, session = null }: { courses: CourseOpt[]; detectedId: string | null; session?: LockedSession | null }) {
   const router = useRouter();
-  const initialId = detectedId ?? courses[0]?.id ?? "";
+  const initialId = session?.courseId ?? detectedId ?? courses[0]?.id ?? "";
   const [courseId, setCourseId] = useState<string>(initialId);
   const course = courses.find((c) => c.id === courseId) ?? null;
   const [file, setFile] = useState<File | null>(null);
   const [probe, setProbe] = useState<Mp4Info | null>(null);
   const [title, setTitle] = useState("");
-  const [sessionTitle, setSessionTitle] = useState("");
-  const [classDate, setClassDate] = useState(() => lastWeekday(courses.find((c) => c.id === initialId)?.weekday ?? null));
+  const [sessionTitle, setSessionTitle] = useState(session?.title ?? "");
+  const [classDate, setClassDate] = useState(() => session?.date ?? lastWeekday(courses.find((c) => c.id === initialId)?.weekdays ?? []));
   const [notes, setNotes] = useState("");
   const [phase, setPhase] = useState<Phase>("idle");
   const [progress, setProgress] = useState(0);
@@ -129,7 +132,7 @@ export function Uploader({ courses, detectedId }: { courses: CourseOpt[]; detect
       if (!save.ok) throw new Error((await save.json()).error ?? "No se pudo guardar el vídeo");
 
       setPhase("hecho");
-      router.push("/events");
+      router.push(session ? `/lessons/${session.courseId}#s-${session.id}` : "/events");
       router.refresh();
     } catch (err) {
       setPhase("idle");
@@ -142,24 +145,25 @@ export function Uploader({ courses, detectedId }: { courses: CourseOpt[]; detect
   return (
     <form onSubmit={submit} className="flex w-full flex-col gap-5">
       <div>
-        <h1 className="text-2xl font-bold">Subir a {course?.name ?? "…"}</h1>
+        <h1 className="text-2xl font-bold">Subir a {session ? session.label : (course?.name ?? "…")}</h1>
         <p className="text-sm text-muted-foreground">
-          {courseId === detectedId ? "Detectado por el horario de hoy" : "Elige el curso y la fecha de la clase"}
+          {session ? session.courseName : courseId === detectedId ? "Detectado por el horario de hoy" : "Elige el curso y la fecha de la clase"}
         </p>
       </div>
 
       <FieldGroup>
-      {courses.length > 1 && (
+      {!session && courses.length > 1 && (
         <Field>
           <FieldLabel htmlFor="course">Curso</FieldLabel>
           <Select
             value={courseId}
+            items={courses.map((c) => ({ value: c.id, label: c.name }))}
             disabled={busy}
             onValueChange={(v) => {
               const id = String(v ?? "");
               setCourseId(id);
               const c = courses.find((x) => x.id === id);
-              setClassDate(lastWeekday(c?.weekday ?? null));
+              setClassDate(lastWeekday(c?.weekdays ?? []));
             }}
           >
             <SelectTrigger id="course" className="w-full">
@@ -189,16 +193,18 @@ export function Uploader({ courses, detectedId }: { courses: CourseOpt[]; detect
         )}
       </Field>
 
+      {!session && (
       <div className="grid gap-4 sm:grid-cols-2">
         <Field>
           <FieldLabel htmlFor="date">Fecha de la clase</FieldLabel>
-          <Input id="date" type="date" value={classDate} onChange={(e) => setClassDate(e.target.value)} disabled={busy} required />
+          <DatePicker id="date" value={classDate} onChange={setClassDate} disabled={busy} required />
         </Field>
         <Field>
           <FieldLabel htmlFor="session">Título de la clase (opcional)</FieldLabel>
           <Input id="session" value={sessionTitle} onChange={(e) => setSessionTitle(e.target.value)} disabled={busy} placeholder="Coreo, segunda parte" />
         </Field>
       </div>
+      )}
 
       <Field>
         <FieldLabel htmlFor="title">Título del vídeo</FieldLabel>

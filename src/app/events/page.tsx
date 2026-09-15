@@ -1,9 +1,12 @@
 import Link from "next/link";
-import { listAllSessions, sessionTitle } from "@/lib/data";
-import { formatDate } from "@/lib/format";
+import { SetHeaderCrumbs } from "@/components/header-title";
+import { listAllSessions, listCourseNames, sessionTitle } from "@/lib/data";
+import { formatDate, formatTimeRange } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
 import { getSessionUser } from "@/lib/auth";
 import { EditSession } from "@/components/edit-session";
+import { DeleteButton } from "@/components/delete-button";
+import { deleteSession } from "@/app/actions/edit";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardAction } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -19,7 +22,7 @@ export default async function EventsPage({
   searchParams: Promise<{ error?: string }>;
 }) {
   const { error } = await searchParams;
-  const [sessions, user] = await Promise.all([listAllSessions(), getSessionUser()]);
+  const [sessions, user, courses] = await Promise.all([listAllSessions(), getSessionUser(), listCourseNames()]);
 
   const videoIds = sessions.flatMap((s) => s.videos.map((v) => v.id));
   const counts = new Map<string, number>();
@@ -31,6 +34,19 @@ export default async function EventsPage({
 
   return (
     <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-6 px-4 py-6 sm:px-6">
+      <SetHeaderCrumbs
+        crumbs={[
+          {
+            label: "Todas las clases",
+            title: "Cursos",
+            options: courses.map((c) => ({ label: c.name, href: `/lessons/${c.id}`, current: false })),
+            links: [
+              { label: "Todos los cursos", href: "/lessons" },
+              { label: "Todas las clases", href: "/events", current: true },
+            ],
+          },
+        ]}
+      />
       {error === "no-profe" && (
         <Alert>
           <AlertDescription>Solo los profes pueden subir vídeos.</AlertDescription>
@@ -55,13 +71,24 @@ export default async function EventsPage({
               <Badge variant="outline" render={<Link href={`/lessons/${s.course.id}`} />}>
                 {s.course.name}
               </Badge>
-              {s.title && <CardDescription>{formatDate(s.date)}</CardDescription>}
+              {(s.title || s.start_time) && <CardDescription>{[s.title ? formatDate(s.date) : null, formatTimeRange(s)].filter(Boolean).join(" · ")}</CardDescription>}
             </div>
             <CardTitle>{sessionTitle(s)}</CardTitle>
             {s.notes && <CardDescription>{s.notes}</CardDescription>}
             {user?.canUpload && (
-              <CardAction>
-                <EditSession session={s} />
+              <CardAction className="flex items-center">
+                <EditSession session={s} slots={s.course.slots} videos={s.videos.map((v) => ({ id: v.id, title: v.title }))} canDelete={user.isAdmin} />
+                {user.isAdmin && (
+                  <DeleteButton
+                    title={`Borrar la clase «${sessionTitle(s)}»`}
+                    description={
+                      s.videos.length === 0
+                        ? "La clase no tiene vídeos. Esta acción no se puede deshacer."
+                        : `Se borrarán también sus ${s.videos.length} ${s.videos.length === 1 ? "vídeo" : "vídeos"} con sus notas. Esta acción no se puede deshacer.`
+                    }
+                    action={deleteSession.bind(null, s.id)}
+                  />
+                )}
               </CardAction>
             )}
           </CardHeader>

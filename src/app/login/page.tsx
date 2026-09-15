@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { SetHeaderCrumbs } from "@/components/header-title";
 import { getSessionUser } from "@/lib/auth";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -15,6 +16,7 @@ export default async function LoginPage({
 
   return (
     <main className="flex flex-1 flex-col items-center justify-center px-4 py-10">
+      <SetHeaderCrumbs crumbs={[{ label: "Entrar" }]} />
       <Card className="w-full max-w-sm">
         <CardHeader>
           <CardTitle>Entrar</CardTitle>

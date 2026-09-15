@@ -1,4 +1,4 @@
-import { S3Client, PutObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
+import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectsCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 // R2 habla la API de S3: mismo SDK, endpoint de Cloudflare, región "auto".
@@ -34,4 +34,11 @@ export function presignGet(key: string, expiresIn = 3600) {
   return getSignedUrl(r2(), new GetObjectCommand({ Bucket: bucket(), Key: key }), {
     expiresIn,
   });
+}
+
+// Borra vídeo, miniatura y tira de fotogramas de R2. Ignora claves nulas.
+export async function deleteObjects(keys: (string | null | undefined)[]) {
+  const list = keys.filter((k): k is string => !!k);
+  if (list.length === 0) return;
+  await r2().send(new DeleteObjectsCommand({ Bucket: bucket(), Delete: { Objects: list.map((Key) => ({ Key })) } }));
 }

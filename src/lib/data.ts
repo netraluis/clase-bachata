@@ -6,14 +6,25 @@ import { formatDate } from "@/lib/format";
 // Jerarquía: escuela → curso → sesión → vídeo → comentario.
 
 export type School = { id: string; name: string };
-export type Course = {
+export type Course = { id: string; school_id: string; name: string };
+// Horario semanal de un curso; un curso tiene 0..n.
+export type Slot = {
   id: string;
-  school_id: string;
-  name: string;
-  weekday: number | null; // 0 domingo … 6 sábado
+  course_id: string;
+  weekday: number; // 0 domingo … 6 sábado
   start_time: string | null; // "20:00:00"
+  end_time: string | null;
 };
-export type Session = { id: string; course_id: string; date: string; title: string | null; notes: string | null };
+export type Session = {
+  id: string;
+  course_id: string;
+  date: string;
+  title: string | null;
+  notes: string | null;
+  start_time: string | null; // fijado en las clases sueltas
+  end_time: string | null;
+  end_date: string | null; // nula = acaba el mismo día
+};
 export type VideoRow = {
   id: string;
   session_id: string;
@@ -40,6 +51,9 @@ export type Comment = {
 };
 
 const VIDEO_COLS = "id, session_id, r2_key, thumb_key, filmstrip_key, title, notes, duration_s, width, height, status, created_at";
+const COURSE_COLS = "id, school_id, name";
+const SLOT_COLS = "id, course_id, weekday, start_time, end_time";
+const SESSION_COLS = "id, course_id, date, title, notes, start_time, end_time, end_date";
 
 export async function getSchool(): Promise<School | null> {
   const supabase = await createClient();
@@ -47,10 +61,11 @@ export async function getSchool(): Promise<School | null> {
   return data as School | null;
 }
 
-export async function listCourses(): Promise<(Course & { sessions: number; videos: number })[]> {
+export async function listCourses(): Promise<(Course & { slots: Slot[]; sessions: number; videos: number })[]> {
   const supabase = await createClient();
-  const [{ data: courses }, { data: sessions }, { data: videos }] = await Promise.all([
-    supabase.from("courses").select("id, school_id, name, weekday, start_time").order("created_at"),
+  const [{ data: courses }, { data: slots }, { data: sessions }, { data: videos }] = await Promise.all([
+    supabase.from("courses").select(COURSE_COLS).order("created_at"),
+    supabase.from("course_slots").select(SLOT_COLS),
     supabase.from("sessions").select("id, course_id"),
     supabase.from("videos").select("id, session_id"),
   ]);
@@ -64,15 +79,19 @@ export async function listCourses(): Promise<(Course & { sessions: number; video
   }
   return ((courses ?? []) as Course[]).map((c) => ({
     ...c,
+    slots: ((slots ?? []) as Slot[]).filter((s) => s.course_id === c.id),
     sessions: sessionsByCourse.get(c.id) ?? 0,
     videos: videosByCourse.get(c.id) ?? 0,
   }));
 }
 
-export async function getCourse(id: string): Promise<Course | null> {
+export async function getCourse(id: string): Promise<(Course & { slots: Slot[] }) | null> {
   const supabase = await createClient();
-  const { data } = await supabase.from("courses").select("id, school_id, name, weekday, start_time").eq("id", id).maybeSingle();
-  return data as Course | null;
+  const [{ data }, { data: slots }] = await Promise.all([
+    supabase.from("courses").select(COURSE_COLS).eq("id", id).maybeSingle(),
+    supabase.from("course_slots").select(SLOT_COLS).eq("course_id", id),
+  ]);
+  return data ? { ...(data as Course), slots: (slots ?? []) as Slot[] } : null;
 }
 
 // Sesiones de un curso con sus vídeos (miniaturas firmadas), más recientes primero.
@@ -82,7 +101,7 @@ export async function listSessionsWithVideos(
   const supabase = await createClient();
   const { data: sessions } = await supabase
     .from("sessions")
-    .select("id, course_id, date, title, notes")
+    .select(SESSION_COLS)
     .eq("course_id", courseId)
     .order("date", { ascending: false });
   const list = (sessions ?? []) as Session[];
@@ -105,15 +124,18 @@ export async function listSessionsWithVideos(
 
 // Todas las clases de la escuela, de más reciente a menos, con su curso y sus vídeos.
 export async function listAllSessions(): Promise<
-  (Session & { course: Course; videos: (VideoRow & { thumbUrl: string | null })[] })[]
+  (Session & { course: Course & { slots: Slot[] }; videos: (VideoRow & { thumbUrl: string | null })[] })[]
 > {
   const supabase = await createClient();
-  const [{ data: sessions }, { data: courses }] = await Promise.all([
-    supabase.from("sessions").select("id, course_id, date, title, notes").order("date", { ascending: false }).order("created_at", { ascending: false }),
-    supabase.from("courses").select("id, school_id, name, weekday, start_time"),
+  const [{ data: sessions }, { data: courses }, { data: slots }] = await Promise.all([
+    supabase.from("sessions").select(SESSION_COLS).order("date", { ascending: false }).order("created_at", { ascending: false }),
+    supabase.from("courses").select(COURSE_COLS),
+    supabase.from("course_slots").select(SLOT_COLS),
   ]);
   const list = (sessions ?? []) as Session[];
-  const courseById = new Map(((courses ?? []) as Course[]).map((c) => [c.id, c]));
+  const courseById = new Map(
+    ((courses ?? []) as Course[]).map((c) => [c.id, { ...c, slots: ((slots ?? []) as Slot[]).filter((s) => s.course_id === c.id) }]),
+  );
   if (list.length === 0) return [];
 
   const { data: videos } = await supabase
@@ -145,7 +167,7 @@ export async function getVideo(
   const [{ data: v }, { data: comments }] = await Promise.all([
     supabase
       .from("videos")
-      .select(`${VIDEO_COLS}, sessions!inner(id, course_id, date, title, notes, courses!inner(id, school_id, name, weekday, start_time))`)
+      .select(`${VIDEO_COLS}, sessions!inner(${SESSION_COLS}, courses!inner(${COURSE_COLS}))`)
       .eq("id", id)
       .maybeSingle(),
     supabase
@@ -184,8 +206,17 @@ export async function listCourseNames(): Promise<{ id: string; name: string }[]>
 }
 export async function listSessionsOfCourse(courseId: string): Promise<Session[]> {
   const supabase = await createClient();
-  const { data } = await supabase.from("sessions").select("id, course_id, date, title, notes").eq("course_id", courseId).order("date", { ascending: false });
+  const { data } = await supabase.from("sessions").select(SESSION_COLS).eq("course_id", courseId).order("date", { ascending: false });
   return (data ?? []) as Session[];
+}
+
+// Una clase con su curso (para subir vídeos a una clase concreta).
+export async function getSession(id: string): Promise<(Session & { course: Course }) | null> {
+  const supabase = await createClient();
+  const { data } = await supabase.from("sessions").select(`${SESSION_COLS}, courses!inner(${COURSE_COLS})`).eq("id", id).maybeSingle();
+  if (!data) return null;
+  const { courses: course, ...session } = data as unknown as Session & { courses: Course };
+  return { ...session, course };
 }
 
 // Busca la sesión de un curso en una fecha; la crea si no existe.
@@ -194,7 +225,7 @@ export async function findOrCreateSession(courseId: string, date: string, title?
   const supabase = await createClient();
   const { data: found } = await supabase
     .from("sessions")
-    .select("id, course_id, date, title, notes")
+    .select(SESSION_COLS)
     .eq("course_id", courseId)
     .eq("date", date)
     .maybeSingle();
@@ -210,14 +241,14 @@ export async function findOrCreateSession(courseId: string, date: string, title?
   const { data: created, error } = await supabase
     .from("sessions")
     .insert({ course_id: courseId, date, title: title || null })
-    .select("id, course_id, date, title, notes")
+    .select(SESSION_COLS)
     .single();
   if (created) return created as Session;
 
   // Carrera: otro la creó a la vez. Volver a buscar.
   const { data: again } = await supabase
     .from("sessions")
-    .select("id, course_id, date, title, notes")
+    .select(SESSION_COLS)
     .eq("course_id", courseId)
     .eq("date", date)
     .maybeSingle();

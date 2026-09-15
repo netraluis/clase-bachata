@@ -1,10 +1,11 @@
 import { redirect } from "next/navigation";
+import { SetHeaderCrumbs } from "@/components/header-title";
 import { getSessionUser, type Role } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { getSchool, listCourses } from "@/lib/data";
-import { formatSchedule, WEEKDAYS, initials } from "@/lib/format";
+import { formatSchedule, initials } from "@/lib/format";
 import { Button } from "@/components/ui/button";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Field, FieldLabel } from "@/components/ui/field";
 import { Badge } from "@/components/ui/badge";
@@ -13,8 +14,9 @@ import { Item, ItemGroup, ItemMedia, ItemContent, ItemTitle, ItemDescription, It
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { RoleSelect } from "./role-select";
 import { EditCourse } from "@/components/edit-course";
-import { WeekdaySelect } from "./weekday-select";
-import { createCourse, renameSchool } from "./actions";
+import { DeleteButton } from "@/components/delete-button";
+import { deleteCourse } from "@/app/actions/edit";
+import { renameSchool } from "./actions";
 
 export const dynamic = "force-dynamic";
 
@@ -42,17 +44,20 @@ export default async function AdminPage() {
   const videosBy = new Map<string, number>();
   for (const v of uploads ?? []) if (v.uploaded_by) videosBy.set(v.uploaded_by, (videosBy.get(v.uploaded_by) ?? 0) + 1);
 
+  // Cursos cuya última clase de horario (esta semana) no tiene sesión.
   const today = new Date();
-  const missing = courses.filter((c) => {
-    if (c.weekday == null) return false;
-    const d = new Date(today);
-    d.setDate(today.getDate() - ((today.getDay() - c.weekday + 7) % 7));
-    const iso = isoDate(d);
-    return !(recentSessions ?? []).some((s) => s.course_id === c.id && s.date === iso);
-  });
+  const missing = courses.filter((c) =>
+    c.slots.some((slot) => {
+      const d = new Date(today);
+      d.setDate(today.getDate() - ((today.getDay() - slot.weekday + 7) % 7));
+      const iso = isoDate(d);
+      return !(recentSessions ?? []).some((s) => s.course_id === c.id && s.date === iso);
+    }),
+  );
 
   return (
     <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-6 px-4 py-6 sm:px-6">
+      <SetHeaderCrumbs crumbs={[{ label: "Personas" }]} />
 
       <Card>
         <CardHeader>
@@ -92,35 +97,25 @@ export default async function AdminPage() {
                 <Item size="sm">
                   <ItemContent>
                     <ItemTitle>{c.name}</ItemTitle>
-                    <ItemDescription>{formatSchedule(c) ?? "Sin horario"}</ItemDescription>
+                    <ItemDescription>{formatSchedule(c.slots) ?? "Sin horario"}</ItemDescription>
                   </ItemContent>
                   <ItemActions>
                     <Badge variant="outline">{c.sessions} {c.sessions === 1 ? "clase" : "clases"}</Badge>
                     <Badge variant="outline">{c.videos} {c.videos === 1 ? "vídeo" : "vídeos"}</Badge>
-                    <EditCourse course={c} days={WEEKDAYS} />
+                    <EditCourse course={c} />
+                    {c.sessions === 0 && (
+                      <DeleteButton
+                        title={`Borrar el curso «${c.name}»`}
+                        description="No tiene clases, así que no se pierde ningún vídeo. Esta acción no se puede deshacer."
+                        action={deleteCourse.bind(null, c.id)}
+                      />
+                    )}
                   </ItemActions>
                 </Item>
               </div>
             ))}
           </ItemGroup>
         </CardContent>
-        <CardFooter className="border-t">
-          <form action={createCourse} className="flex w-full flex-wrap items-end gap-2">
-            <Field className="min-w-40 flex-1">
-              <FieldLabel htmlFor="course-name">Nuevo curso</FieldLabel>
-              <Input id="course-name" name="name" required placeholder="Salsa intermedio" />
-            </Field>
-            <Field className="w-auto">
-              <FieldLabel htmlFor="weekday">Día</FieldLabel>
-              <WeekdaySelect days={WEEKDAYS} />
-            </Field>
-            <Field className="w-auto">
-              <FieldLabel htmlFor="start_time">Hora</FieldLabel>
-              <Input id="start_time" name="start_time" type="time" />
-            </Field>
-            <Button type="submit">Crear</Button>
-          </form>
-        </CardFooter>
       </Card>
 
       <Card>

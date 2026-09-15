@@ -5,6 +5,8 @@ import { formatDate, formatShortDate } from "@/lib/format";
 import { SetHeaderCrumbs } from "@/components/header-title";
 import { getSessionUser } from "@/lib/auth";
 import { Badge } from "@/components/ui/badge";
+import { DeleteButton } from "@/components/delete-button";
+import { deleteVideo } from "@/app/actions/edit";
 import { Player } from "./player";
 
 export const dynamic = "force-dynamic";
@@ -26,17 +28,24 @@ export default async function VideoPage({ params }: { params: Promise<{ id: stri
           {
             label: v.course.name,
             href: `/lessons/${v.course.id}`,
+            title: "Cursos",
             options: courses.map((c) => ({ label: c.name, href: `/lessons/${c.id}`, current: c.id === v.course.id })),
+            links: [
+              { label: "Todos los cursos", href: "/lessons" },
+              { label: "Todas las clases", href: "/events" },
+            ],
           },
           {
             label: v.session.title?.trim() || "Clase",
             href: `/lessons/${v.course.id}#s-${v.session.id}`,
+            title: "Clases",
             options: sessions.map((s) => ({
               label: s.title?.trim() || "Clase",
               hint: formatShortDate(s.date),
               href: `/lessons/${v.course.id}#s-${s.id}`,
               current: s.id === v.session.id,
             })),
+            links: [{ label: "Clases de este curso", href: `/lessons/${v.course.id}` }],
           },
           { label: formatShortDate(v.session.date) },
         ]}
@@ -50,7 +59,17 @@ export default async function VideoPage({ params }: { params: Promise<{ id: stri
             {v.session.title ? `${sessionTitle(v.session)} · ${formatDate(v.session.date)}` : formatDate(v.session.date)}
           </span>
         </div>
-        <h1 className="text-2xl font-bold">{v.title}</h1>
+        <div className="flex items-start gap-2">
+          <h1 className="min-w-0 flex-1 text-2xl font-bold">{v.title}</h1>
+          {user?.isAdmin && (
+            <DeleteButton
+              title={`Borrar el vídeo «${v.title}»`}
+              description="Se borra el vídeo de R2 con sus notas. Esta acción no se puede deshacer."
+              action={deleteVideo.bind(null, v.id)}
+              redirectTo={`/lessons/${v.course.id}`}
+            />
+          )}
+        </div>
       </div>
 
       <Player
