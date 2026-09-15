@@ -1,10 +1,8 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getVideo, sessionTitle, listCourseNames, listSessionsOfCourse } from "@/lib/data";
-import { formatDate, formatShortDate } from "@/lib/format";
+import { getVideo, listCourseNames, listSessionsOfCourse } from "@/lib/data";
+import { formatShortDate } from "@/lib/format";
 import { SetHeaderCrumbs } from "@/components/header-title";
 import { getSessionUser } from "@/lib/auth";
-import { Badge } from "@/components/ui/badge";
 import { DeleteButton } from "@/components/delete-button";
 import { deleteVideo } from "@/app/actions/edit";
 import { Player } from "./player";
@@ -50,28 +48,6 @@ export default async function VideoPage({ params }: { params: Promise<{ id: stri
           { label: formatShortDate(v.session.date) },
         ]}
       />
-      <div className="flex flex-col gap-2">
-        <div className="flex flex-wrap items-center gap-2">
-          <Badge variant="outline" render={<Link href={`/lessons/${v.course.id}`} />}>
-            {v.course.name}
-          </Badge>
-          <span className="text-sm text-muted-foreground">
-            {v.session.title ? `${sessionTitle(v.session)} · ${formatDate(v.session.date)}` : formatDate(v.session.date)}
-          </span>
-        </div>
-        <div className="flex items-start gap-2">
-          <h1 className="min-w-0 flex-1 text-2xl font-bold">{v.title}</h1>
-          {user?.isAdmin && (
-            <DeleteButton
-              title={`Borrar el vídeo «${v.title}»`}
-              description="Se borra el vídeo de R2 con sus notas. Esta acción no se puede deshacer."
-              action={deleteVideo.bind(null, v.id)}
-              redirectTo={`/lessons/${v.course.id}`}
-            />
-          )}
-        </div>
-      </div>
-
       <Player
         videoId={v.id}
         src={v.videoUrl}
@@ -84,6 +60,17 @@ export default async function VideoPage({ params }: { params: Promise<{ id: stri
         profeNote={v.notes}
         viewer={user ? { id: user.id, role: user.role, isAdmin: user.isAdmin, canWrite: user.canUpload } : null}
       />
+      {/* Sin cabecera propia: las migas ya dicen curso, clase y fecha. */}
+      {user?.isAdmin && (
+        <div className="flex justify-end">
+          <DeleteButton
+            title={`Borrar el vídeo «${v.title}»`}
+            description="Se borra el vídeo de R2 con sus notas. Esta acción no se puede deshacer."
+            action={deleteVideo.bind(null, v.id)}
+            redirectTo={`/lessons/${v.course.id}`}
+          />
+        </div>
+      )}
     </main>
   );
 }
