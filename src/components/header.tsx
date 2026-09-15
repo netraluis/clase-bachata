@@ -1,17 +1,15 @@
 import Link from "next/link";
 import { getSessionUser } from "@/lib/auth";
-import { getSchool } from "@/lib/data";
 import { initials } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
-import { HeaderNav, MobileMenu, type HeaderUser } from "@/components/header-nav";
+import { RoleLink, SignOut, MobileMenu, type HeaderUser } from "@/components/header-nav";
 import { Logo } from "@/components/logo";
-import { HeaderBrandText } from "@/components/header-title";
+import { HeaderCrumbs } from "@/components/header-title";
 
-// Cabecera común: escuela, navegación (en línea en escritorio, panel en móvil) y sesión.
+// Cabecera común: logo, migas de la página y sesión (en línea en escritorio, panel en móvil).
 export async function Header() {
-  const [session, school] = await Promise.all([getSessionUser(), getSchool()]);
+  const session = await getSessionUser();
   const user: HeaderUser = session
     ? { initials: initials(session.name ?? session.email), role: session.role, canUpload: session.canUpload, isAdmin: session.isAdmin }
     : null;
@@ -23,11 +21,7 @@ export async function Header() {
           <Link href="/events" aria-label="Clases">
             <Logo className="size-7 shrink-0 text-primary" />
           </Link>
-          <HeaderBrandText fallback={school?.name ?? "Compás"} />
-        </div>
-
-        <div className="ml-2">
-          <HeaderNav user={user} />
+          <HeaderCrumbs />
         </div>
 
         <div className="ml-auto hidden items-center gap-2 md:flex">
@@ -41,12 +35,8 @@ export async function Header() {
               <Avatar className="size-7">
                 <AvatarFallback className="text-xs">{user.initials}</AvatarFallback>
               </Avatar>
-              <Badge variant={user.canUpload ? "default" : "secondary"}>{user.role}</Badge>
-              <form action="/auth/signout" method="post">
-                <Button variant="ghost" size="sm" type="submit">
-                  Salir
-                </Button>
-              </form>
+              <RoleLink user={user} />
+              <SignOut />
             </>
           )}
         </div>
