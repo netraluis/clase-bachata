@@ -106,34 +106,37 @@ function SessionTimeFields({ id, session, slots }: { id: string; session: Sessio
         </>
       )}
       {mode === "suelta" && (
-      <div className="grid gap-4 sm:grid-cols-3">
-        <Field>
-          <FieldLabel htmlFor={`date-${id}`}>Fecha</FieldLabel>
-          <DatePicker id={`date-${id}`} name="date" value={date} onChange={setDate} required />
-        </Field>
-        <Field>
-          <FieldLabel htmlFor={`start-${id}`}>Inicio</FieldLabel>
-          <TimeSelect id={`start-${id}`} name="start_time" value={start} onChange={setStart} />
-        </Field>
-        <Field>
-          <FieldLabel htmlFor={`end-${id}`}>Fin</FieldLabel>
-          <TimeSelect id={`end-${id}`} name="end_time" value={end} onChange={setEnd} />
-        </Field>
-      </div>
-      )}
-      {mode === "suelta" && (
-      <Field>
-        <FieldLabel htmlFor={`end-date-${id}`}>Fecha de fin</FieldLabel>
-        <DatePicker
-          id={`end-date-${id}`}
-          name="end_date"
-          value={nextDayEnd ? nextDay(date) : effectiveEnd}
-          onChange={(v) => {
-            setEndTouched(true);
-            setEndDate(v);
-          }}
-        />
-      </Field>
+        <>
+          {/* Fila 1: fecha e inicio. Fila 2: fecha de fin y hora de fin. */}
+          <div className="grid grid-cols-[1fr_8rem] gap-4">
+            <Field>
+              <FieldLabel htmlFor={`date-${id}`}>Fecha</FieldLabel>
+              <DatePicker id={`date-${id}`} name="date" value={date} onChange={setDate} required />
+            </Field>
+            <Field>
+              <FieldLabel htmlFor={`start-${id}`}>Inicio</FieldLabel>
+              <TimeSelect id={`start-${id}`} name="start_time" value={start} onChange={setStart} />
+            </Field>
+          </div>
+          <div className="grid grid-cols-[1fr_8rem] gap-4">
+            <Field>
+              <FieldLabel htmlFor={`end-date-${id}`}>Fecha de fin</FieldLabel>
+              <DatePicker
+                id={`end-date-${id}`}
+                name="end_date"
+                value={nextDayEnd ? nextDay(date) : effectiveEnd}
+                onChange={(v) => {
+                  setEndTouched(true);
+                  setEndDate(v);
+                }}
+              />
+            </Field>
+            <Field>
+              <FieldLabel htmlFor={`end-${id}`}>Fin</FieldLabel>
+              <TimeSelect id={`end-${id}`} name="end_time" value={end} onChange={setEnd} />
+            </Field>
+          </div>
+        </>
       )}
       {nextDayEnd && (
         <Alert>
