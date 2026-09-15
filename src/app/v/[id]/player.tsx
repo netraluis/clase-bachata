@@ -1,8 +1,7 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useRef, useState, useTransition } from "react";
-import { FastForward, MessageSquareText, Pause, Play, Volume2, VolumeX, Wrench, X } from "lucide-react";
+import { FastForward, Maximize, MessageSquareText, Pause, Play, Volume2, VolumeX, Wrench, X } from "lucide-react";
 import type { Comment } from "@/lib/data";
 import { formatStamp } from "@/lib/format";
 import type { Role } from "@/lib/auth";
@@ -24,8 +23,8 @@ import { Filmstrip } from "./filmstrip";
 
 type Viewer = { id: string; role: Role; isAdmin: boolean; canWrite: boolean } | null;
 // Panel bajo el vídeo, elegido desde la barra flotante: herramientas (bucle,
-// pausa, velocidad, sonido) o notas.
-type Panel = "tools" | "notes";
+// pausa, velocidad, sonido), notas, o nada (solo el vídeo).
+type Panel = "tools" | "notes" | "video";
 
 function fmtSpeed(v: number): string {
   return String(Math.round(v * 100) / 100);
@@ -189,7 +188,9 @@ export function Player({
               if (b === durationProp || b === 0) setB(d);
             }}
             // En móvil el vídeo cede alto al panel; con las notas, un poco más.
-            className={`mx-auto block w-full cursor-pointer bg-black object-contain md:max-h-[70vh] ${panel === "notes" ? "max-h-[40vh]" : "max-h-[50vh]"}`}
+            className={`mx-auto block w-full cursor-pointer bg-black object-contain ${
+              panel === "video" ? "max-h-[calc(100dvh-8rem)]" : panel === "notes" ? "max-h-[40vh] md:max-h-[70vh]" : "max-h-[50vh] md:max-h-[70vh]"
+            }`}
             style={{ aspectRatio: ratio }}
           />
           {!playing && (
@@ -241,7 +242,7 @@ export function Player({
       </div>
 
       {/* Panel: ocupa el resto de la pantalla, sin tarjeta */}
-      <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-4 px-4 pt-4 sm:px-6">
+      <div className={`mx-auto flex w-full max-w-4xl flex-1 flex-col gap-4 px-4 pt-4 sm:px-6 ${panel === "video" ? "hidden" : ""}`}>
         {playError && (
           <Alert variant="destructive">
             <AlertDescription>
@@ -335,13 +336,28 @@ export function Player({
                 )}
                 {comments.map((c, i) => {
                   const canDelete = viewer && (viewer.id === c.author_id || viewer.isAdmin);
-                  const dim = selected && selected !== c.id;
+                  const isSel = selected === c.id;
+                  const dim = selected && !isSel;
                   return (
                     <div key={c.id}>
                       {(i > 0 || profeNote) && <ItemSeparator />}
-                      <Item size="sm" className={`transition-opacity ${dim ? "opacity-40" : ""}`}>
+                      {/* Toda la fila selecciona la nota; la marca de la barra se selecciona a la vez. */}
+                      <Item
+                        size="sm"
+                        role="button"
+                        tabIndex={0}
+                        aria-pressed={isSel}
+                        onClick={() => pick(c)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            pick(c);
+                          }
+                        }}
+                        className={`cursor-pointer transition-opacity ${isSel ? "bg-muted" : ""} ${dim ? "opacity-40" : ""}`}
+                      >
                         <ItemMedia>
-                          <Button variant="outline" size="sm" onClick={() => pick(c)} aria-pressed={selected === c.id}>
+                          <Button variant={isSel ? "default" : "outline"} size="sm" tabIndex={-1} aria-hidden="true" className="pointer-events-none">
                             {formatStamp(c.t_seconds)}
                           </Button>
                         </ItemMedia>
@@ -350,7 +366,16 @@ export function Player({
                         </ItemContent>
                         {canDelete && (
                           <ItemActions>
-                            <Button variant="ghost" size="icon" aria-label="Borrar nota" onClick={() => remove(c)} disabled={pending}>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              aria-label="Borrar nota"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                remove(c);
+                              }}
+                              disabled={pending}
+                            >
                               <X />
                             </Button>
                           </ItemActions>
@@ -360,11 +385,6 @@ export function Player({
                   );
                 })}
               </ItemGroup>
-            )}
-            {!viewer && (
-              <p className="text-xs text-muted-foreground">
-                Las notas las escribe el profe. Si lo eres,&nbsp;<Link href="/login" className="underline">entra</Link>.
-              </p>
             )}
             {error && (
               <Alert variant="destructive">
@@ -410,6 +430,9 @@ export function Player({
           <ToggleGroupItem value="notes" aria-label="Notas">
             <MessageSquareText />
             {comments.length > 0 && <span className="tabular-nums">{comments.length}</span>}
+          </ToggleGroupItem>
+          <ToggleGroupItem value="video" aria-label="Solo el vídeo">
+            <Maximize />
           </ToggleGroupItem>
         </ToggleGroup>
       </div>
