@@ -8,7 +8,6 @@ import { formatStamp } from "@/lib/format";
 import type { Role } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Toggle } from "@/components/ui/toggle";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
@@ -38,22 +37,22 @@ export function Player({
   poster,
   filmstrip,
   ratio,
-  vertical,
   duration: durationProp,
   comments,
   profeNote,
   viewer,
+  toolsExtra,
 }: {
   videoId: string;
   src: string;
   poster: string | null;
   filmstrip: string | null;
   ratio: string;
-  vertical: boolean;
   duration: number;
   comments: Comment[];
   profeNote: string | null;
   viewer: Viewer;
+  toolsExtra?: React.ReactNode; // p. ej. la papelera del admin, al final de herramientas
 }) {
   const ref = useRef<HTMLVideoElement>(null);
   const barRef = useRef<HTMLDivElement>(null);
@@ -162,12 +161,15 @@ export function Player({
     .join(", ");
   const pct = (t: number) => Math.min(100, (t / duration) * 100);
 
+  const canWrite = !!viewer?.canWrite;
+  // Hueco inferior: la pastilla, y con el campo de escribir además su alto.
+  const bottomPad = panel === "notes" && canWrite ? "pb-40" : "pb-24";
+
   return (
-    <div className="flex flex-col gap-4 pb-20">
-      {/* Escenario + tira de fotogramas, pegados y del mismo ancho */}
-      <div className="flex flex-col gap-1">
-      <div className="relative overflow-hidden rounded-xl bg-black">
-        <div className={vertical ? "mx-auto w-full max-w-sm" : "w-full"}>
+    <div className={`flex flex-1 flex-col ${bottomPad}`}>
+      {/* Escenario a sangre, sobre negro, fijo arriba mientras el resto se desplaza */}
+      <div className="sticky top-0 z-30 bg-black">
+        <div className="relative mx-auto w-full max-w-4xl">
           <video
             ref={ref}
             playsInline
@@ -186,231 +188,213 @@ export function Player({
               setDuration(d);
               if (b === durationProp || b === 0) setB(d);
             }}
-            // Con las notas abiertas el vídeo cede alto para que se vean debajo (móvil).
-            className={`mx-auto block w-full cursor-pointer bg-black object-contain ${panel === "notes" ? "max-h-[42vh] md:max-h-[70vh]" : "max-h-[70vh]"}`}
+            // En móvil el vídeo cede alto al panel; con las notas, un poco más.
+            className={`mx-auto block w-full cursor-pointer bg-black object-contain md:max-h-[70vh] ${panel === "notes" ? "max-h-[40vh]" : "max-h-[50vh]"}`}
             style={{ aspectRatio: ratio }}
           />
-        </div>
-        {!playing && (
-          <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-            <div className="flex size-14 items-center justify-center rounded-full bg-black/40 text-white ring-1 ring-white/40">
-              <Play className="size-6" />
+          {!playing && (
+            <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+              <div className="flex size-14 items-center justify-center rounded-full bg-black/40 text-white ring-1 ring-white/40">
+                <Play className="size-6" />
+              </div>
             </div>
-          </div>
-        )}
-        <div className="stage-shade" />
-
-        <div ref={barRef} className="timeline" onClick={onBarClick} role="slider" aria-label="Posición" aria-valuemin={0} aria-valuemax={duration} aria-valuenow={now}>
-          <div className="timeline-played" style={{ width: `${played}%` }} />
-          {duration > 0 &&
-            comments.map((c) => (
-              <Tooltip
-                key={c.id}
-                // Abierto al pasar el ratón (escritorio) o mientras la nota está
-                // seleccionada (móvil: un toque abre, otro cierra).
-                open={hovered === c.id || selected === c.id}
-                onOpenChange={(open) => setHovered(open ? c.id : null)}
-              >
-                <TooltipTrigger
-                  render={
-                    <button type="button" className="timeline-pin"
-                      style={{ left: `${pct(c.t_seconds)}%` }}
-                      aria-label={`Nota en ${formatStamp(c.t_seconds)}`}
-                      aria-pressed={selected === c.id}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        pick(c);
-                      }}
-                    />
-                  }
-                />
-                <TooltipContent side="top" className="max-w-xs">
-                  <p className="text-xs opacity-80">{formatStamp(c.t_seconds)}</p>
-                  <p>{c.body}</p>
-                </TooltipContent>
-              </Tooltip>
-            ))}
-        </div>
-        <div className="timeline-meta">
-          <span>{formatStamp(now)}</span>
-          <span>{status}</span>
-          <span>{formatStamp(duration)}</span>
-        </div>
-      </div>
-
-      {playError && (
-        <Alert variant="destructive">
-          <AlertDescription>
-            El navegador no ha reproducido el vídeo ({playError}). Prueba con los controles del propio vídeo.
-          </AlertDescription>
-        </Alert>
-      )}
-
-      {/* Tira de fotogramas: elige el trozo que se repite arrastrando los extremos */}
-      {panel === "tools" && duration > 0 && (
-        <Filmstrip
-          image={filmstrip}
-          duration={duration}
-          a={a}
-          b={Math.min(b, duration)}
-          now={now}
-          onChange={(na, nb) => {
-            setA(na);
-            setB(nb);
-          }}
-          onSeek={seek}
-        />
-      )}
-      </div>
-
-      {/* Controles: solo símbolos */}
-      {panel === "tools" && (
-      <div className="flex items-center gap-2">
-        <Button variant="outline" size="icon" onClick={togglePlay} aria-label={playing ? "Pausa" : "Reproducir"}>
-          {playing ? <Pause /> : <Play />}
-        </Button>
-        <Toggle variant="outline" pressed={muted} onPressedChange={setMuted} aria-label={muted ? "Activar sonido" : "Quitar sonido"} className="size-9 px-0">
-          {muted ? <VolumeX /> : <Volume2 />}
-        </Toggle>
-        <Popover>
-          <PopoverTrigger
-            render={<Button variant={speed !== 1 ? "secondary" : "outline"} size={speed !== 1 ? "sm" : "icon"} aria-label={`Velocidad ${fmtSpeed(speed)}×`} />}
-          >
-            <FastForward />
-            {speed !== 1 && <span className="tabular-nums">{fmtSpeed(speed)}×</span>}
-          </PopoverTrigger>
-          <PopoverContent className="w-64" align="start">
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Velocidad</span>
-              <span className="font-medium tabular-nums">{fmtSpeed(speed)}×</span>
-            </div>
-            <Slider
-              className="mt-3"
-              value={[speed]}
-              min={0.5}
-              max={1.5}
-              step={0.05}
-              aria-label="Velocidad de reproducción"
-              onValueChange={(v) => setSpeed(Number(Array.isArray(v) ? v[0] : v))}
-            />
-            <div className="mt-2 flex justify-between text-xs text-muted-foreground">
-              <span>0.5×</span>
-              <span>1×</span>
-              <span>1.5×</span>
-            </div>
-          </PopoverContent>
-        </Popover>
-      </div>
-      )}
-
-      {/* Notas */}
-      {panel === "notes" && (
-      <Card>
-        <CardHeader>
-          <CardTitle>Notas del profe</CardTitle>
-          <CardDescription>{comments.length === 1 ? "1 nota" : `${comments.length} notas`}</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {comments.length === 0 && !profeNote ? (
-            <Empty className="py-6">
-              <EmptyHeader>
-                <EmptyTitle>Todavía no hay notas</EmptyTitle>
-                <EmptyDescription>
-                  {viewer?.canWrite ? "Pausa el vídeo donde quieras y escribe abajo." : "El profe todavía no ha dejado notas en este vídeo."}
-                </EmptyDescription>
-              </EmptyHeader>
-            </Empty>
-          ) : (
-            <ItemGroup>
-              {profeNote && (
-                <Item size="sm">
-                  <ItemMedia>
-                    <Badge variant="secondary">general</Badge>
-                  </ItemMedia>
-                  <ItemContent>
-                    <ItemDescription className="whitespace-pre-line text-foreground">{profeNote}</ItemDescription>
-                  </ItemContent>
-                </Item>
-              )}
-              {comments.map((c, i) => {
-                const canDelete = viewer && (viewer.id === c.author_id || viewer.isAdmin);
-                const dim = selected && selected !== c.id;
-                return (
-                  <div key={c.id}>
-                    {(i > 0 || profeNote) && <ItemSeparator />}
-                    <Item size="sm" className={`transition-opacity ${dim ? "opacity-40" : ""}`}>
-                      <ItemMedia>
-                        <Button variant="outline" size="sm" onClick={() => pick(c)} aria-pressed={selected === c.id}>
-                          {formatStamp(c.t_seconds)}
-                        </Button>
-                      </ItemMedia>
-                      <ItemContent>
-                        <ItemTitle className="whitespace-pre-line font-normal">{c.body}</ItemTitle>
-                      </ItemContent>
-                      {canDelete && (
-                        <ItemActions>
-                          <Button variant="ghost" size="icon" aria-label="Borrar nota" onClick={() => remove(c)} disabled={pending}>
-                            <X />
-                          </Button>
-                        </ItemActions>
-                      )}
-                    </Item>
-                  </div>
-                );
-              })}
-            </ItemGroup>
           )}
-        </CardContent>
+          <div className="stage-shade" />
 
-        {viewer?.canWrite ? (
-          <CardFooter className="border-t">
-            <form onSubmit={submitNote} className="flex w-full flex-col gap-3">
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:gap-4">
-                <div className="shrink-0">
-                  <p className="text-xs text-muted-foreground">Nota en</p>
-                  <p className="font-heading text-3xl font-bold text-primary tabular-nums">{formatStamp(now)}</p>
-                </div>
-                <Textarea
-                  value={draft}
-                  onFocus={pause}
-                  onChange={(e) => setDraft(e.target.value)}
-                  placeholder="Escribe una nota"
-                  rows={2}
-                  className="flex-1"
-                  disabled={pending}
-                />
-              </div>
-              <div className="flex flex-wrap items-center gap-2">
-                <Button type="submit" disabled={pending || !draft.trim()}>
-                  {pending && <Spinner data-icon="inline-start" />}
-                  Guardar en {formatStamp(now)}
-                </Button>
-                {draft && (
-                  <Button type="button" variant="ghost" onClick={() => setDraft("")}>
-                    Cancelar
-                  </Button>
-                )}
-                <span className="text-xs text-muted-foreground">El vídeo se pausa mientras escribes. Muévelo para cambiar el momento de la nota.</span>
-              </div>
-              {error && (
-                <Alert variant="destructive">
-                  <AlertDescription>{error}</AlertDescription>
-                </Alert>
-              )}
-            </form>
-          </CardFooter>
-        ) : (
-          !viewer && (
-            <CardFooter className="border-t text-xs text-muted-foreground">
-              Las notas las escribe el profe. Si lo eres,&nbsp;<Link href="/login" className="underline">entra</Link>.
-            </CardFooter>
-          )
+          <div ref={barRef} className="timeline" onClick={onBarClick} role="slider" aria-label="Posición" aria-valuemin={0} aria-valuemax={duration} aria-valuenow={now}>
+            <div className="timeline-played" style={{ width: `${played}%` }} />
+            {duration > 0 &&
+              comments.map((c) => (
+                <Tooltip
+                  key={c.id}
+                  // Abierto al pasar el ratón (escritorio) o mientras la nota está
+                  // seleccionada (móvil: un toque abre, otro cierra).
+                  open={hovered === c.id || selected === c.id}
+                  onOpenChange={(open) => setHovered(open ? c.id : null)}
+                >
+                  <TooltipTrigger
+                    render={
+                      <button type="button" className="timeline-pin"
+                        style={{ left: `${pct(c.t_seconds)}%` }}
+                        aria-label={`Nota en ${formatStamp(c.t_seconds)}`}
+                        aria-pressed={selected === c.id}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          pick(c);
+                        }}
+                      />
+                    }
+                  />
+                  <TooltipContent side="top" className="max-w-xs">
+                    <p className="text-xs opacity-80">{formatStamp(c.t_seconds)}</p>
+                    <p>{c.body}</p>
+                  </TooltipContent>
+                </Tooltip>
+              ))}
+          </div>
+          <div className="timeline-meta">
+            <span>{formatStamp(now)}</span>
+            <span>{status}</span>
+            <span>{formatStamp(duration)}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Panel: ocupa el resto de la pantalla, sin tarjeta */}
+      <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-4 px-4 pt-4 sm:px-6">
+        {playError && (
+          <Alert variant="destructive">
+            <AlertDescription>
+              El navegador no ha reproducido el vídeo ({playError}). Prueba con los controles del propio vídeo.
+            </AlertDescription>
+          </Alert>
         )}
-      </Card>
-      )}
 
-      {/* Barra flotante: herramientas o notas (patrón de Vimeo en móvil) */}
-      <div className="pointer-events-none fixed inset-x-0 bottom-4 z-40 flex justify-center">
+        {panel === "tools" && (
+          <>
+            <h2 className="text-2xl font-bold">Herramientas</h2>
+            {/* Tira de fotogramas: elige el trozo que se repite arrastrando los extremos */}
+            {duration > 0 && (
+              <Filmstrip
+                image={filmstrip}
+                duration={duration}
+                a={a}
+                b={Math.min(b, duration)}
+                now={now}
+                onChange={(na, nb) => {
+                  setA(na);
+                  setB(nb);
+                }}
+                onSeek={seek}
+              />
+            )}
+            {/* Controles: solo símbolos */}
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="icon" onClick={togglePlay} aria-label={playing ? "Pausa" : "Reproducir"}>
+                {playing ? <Pause /> : <Play />}
+              </Button>
+              <Toggle variant="outline" pressed={muted} onPressedChange={setMuted} aria-label={muted ? "Activar sonido" : "Quitar sonido"} className="size-9 px-0">
+                {muted ? <VolumeX /> : <Volume2 />}
+              </Toggle>
+              <Popover>
+                <PopoverTrigger
+                  render={<Button variant={speed !== 1 ? "secondary" : "outline"} size={speed !== 1 ? "sm" : "icon"} aria-label={`Velocidad ${fmtSpeed(speed)}×`} />}
+                >
+                  <FastForward />
+                  {speed !== 1 && <span className="tabular-nums">{fmtSpeed(speed)}×</span>}
+                </PopoverTrigger>
+                <PopoverContent className="w-64" align="start">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Velocidad</span>
+                    <span className="font-medium tabular-nums">{fmtSpeed(speed)}×</span>
+                  </div>
+                  <Slider
+                    className="mt-3"
+                    value={[speed]}
+                    min={0.5}
+                    max={1.5}
+                    step={0.05}
+                    aria-label="Velocidad de reproducción"
+                    onValueChange={(v) => setSpeed(Number(Array.isArray(v) ? v[0] : v))}
+                  />
+                  <div className="mt-2 flex justify-between text-xs text-muted-foreground">
+                    <span>0.5×</span>
+                    <span>1×</span>
+                    <span>1.5×</span>
+                  </div>
+                </PopoverContent>
+              </Popover>
+              {toolsExtra && <div className="ml-auto">{toolsExtra}</div>}
+            </div>
+          </>
+        )}
+
+        {panel === "notes" && (
+          <>
+            <h2 className="text-2xl font-bold">Notas del profe</h2>
+            {comments.length === 0 && !profeNote ? (
+              <Empty className="py-6">
+                <EmptyHeader>
+                  <EmptyTitle>Todavía no hay notas</EmptyTitle>
+                  <EmptyDescription>
+                    {canWrite ? "Pausa el vídeo donde quieras y escribe abajo." : "El profe todavía no ha dejado notas en este vídeo."}
+                  </EmptyDescription>
+                </EmptyHeader>
+              </Empty>
+            ) : (
+              <ItemGroup>
+                {profeNote && (
+                  <Item size="sm">
+                    <ItemMedia>
+                      <Badge variant="secondary">general</Badge>
+                    </ItemMedia>
+                    <ItemContent>
+                      <ItemDescription className="whitespace-pre-line text-foreground">{profeNote}</ItemDescription>
+                    </ItemContent>
+                  </Item>
+                )}
+                {comments.map((c, i) => {
+                  const canDelete = viewer && (viewer.id === c.author_id || viewer.isAdmin);
+                  const dim = selected && selected !== c.id;
+                  return (
+                    <div key={c.id}>
+                      {(i > 0 || profeNote) && <ItemSeparator />}
+                      <Item size="sm" className={`transition-opacity ${dim ? "opacity-40" : ""}`}>
+                        <ItemMedia>
+                          <Button variant="outline" size="sm" onClick={() => pick(c)} aria-pressed={selected === c.id}>
+                            {formatStamp(c.t_seconds)}
+                          </Button>
+                        </ItemMedia>
+                        <ItemContent>
+                          <ItemTitle className="whitespace-pre-line font-normal">{c.body}</ItemTitle>
+                        </ItemContent>
+                        {canDelete && (
+                          <ItemActions>
+                            <Button variant="ghost" size="icon" aria-label="Borrar nota" onClick={() => remove(c)} disabled={pending}>
+                              <X />
+                            </Button>
+                          </ItemActions>
+                        )}
+                      </Item>
+                    </div>
+                  );
+                })}
+              </ItemGroup>
+            )}
+            {!viewer && (
+              <p className="text-xs text-muted-foreground">
+                Las notas las escribe el profe. Si lo eres,&nbsp;<Link href="/login" className="underline">entra</Link>.
+              </p>
+            )}
+            {error && (
+              <Alert variant="destructive">
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
+          </>
+        )}
+      </div>
+
+      {/* Pegado abajo: el campo de escribir (profes, con las notas abiertas) y la pastilla */}
+      <div className="pointer-events-none fixed inset-x-0 bottom-0 z-40 flex flex-col items-center gap-3 pb-4">
+        {panel === "notes" && canWrite && (
+          <form onSubmit={submitNote} className="pointer-events-auto flex w-full max-w-4xl items-end gap-2 border-t bg-background px-4 pt-3 sm:px-6">
+            <Textarea
+              value={draft}
+              onFocus={pause}
+              onChange={(e) => setDraft(e.target.value)}
+              placeholder={`Nota en ${formatStamp(now)}…`}
+              rows={1}
+              className="min-h-9 flex-1 resize-none"
+              disabled={pending}
+              aria-label="Nueva nota"
+            />
+            <Button type="submit" disabled={pending || !draft.trim()}>
+              {pending && <Spinner data-icon="inline-start" />}
+              {formatStamp(now)}
+            </Button>
+          </form>
+        )}
         <ToggleGroup
           value={[panel]}
           onValueChange={(v) => {

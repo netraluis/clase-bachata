@@ -17,10 +17,9 @@ export default async function VideoPage({ params }: { params: Promise<{ id: stri
   const [courses, sessions] = await Promise.all([listCourseNames(), listSessionsOfCourse(v.course.id)]);
 
   const ratio = v.width && v.height ? `${v.width} / ${v.height}` : "16 / 9";
-  const vertical = !!(v.width && v.height && v.height > v.width);
 
   return (
-    <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-5 px-4 py-6 sm:px-6">
+    <main className="flex flex-1 flex-col">
       <SetHeaderCrumbs
         crumbs={[
           {
@@ -54,23 +53,22 @@ export default async function VideoPage({ params }: { params: Promise<{ id: stri
         poster={v.posterUrl}
         filmstrip={v.filmstripUrl}
         ratio={ratio}
-        vertical={vertical}
         duration={v.duration_s ?? 0}
         comments={v.comments}
         profeNote={v.notes}
         viewer={user ? { id: user.id, role: user.role, isAdmin: user.isAdmin, canWrite: user.canUpload } : null}
+        // Sin cabecera propia: las migas ya dicen curso, clase y fecha. La papelera va con las herramientas.
+        toolsExtra={
+          user?.isAdmin ? (
+            <DeleteButton
+              title={`Borrar el vídeo «${v.title}»`}
+              description="Se borra el vídeo de R2 con sus notas. Esta acción no se puede deshacer."
+              action={deleteVideo.bind(null, v.id)}
+              redirectTo={`/lessons/${v.course.id}`}
+            />
+          ) : null
+        }
       />
-      {/* Sin cabecera propia: las migas ya dicen curso, clase y fecha. */}
-      {user?.isAdmin && (
-        <div className="flex justify-end">
-          <DeleteButton
-            title={`Borrar el vídeo «${v.title}»`}
-            description="Se borra el vídeo de R2 con sus notas. Esta acción no se puede deshacer."
-            action={deleteVideo.bind(null, v.id)}
-            redirectTo={`/lessons/${v.course.id}`}
-          />
-        </div>
-      )}
     </main>
   );
 }
